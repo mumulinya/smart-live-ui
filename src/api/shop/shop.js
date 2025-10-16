@@ -42,3 +42,10 @@ export function delShop(id) {
     method: 'delete'
   })
 }
+//刷新缓存
+export function flushCache() {
+  return request({
+    url: '/shop/flushCache' ,
+    method: 'get'
+  })
+}

@@ -3,7 +3,7 @@ import request from '@/utils/request'
 // 查询优惠券订单表列表
 export function listOrder(query) {
   return request({
-    url: '/order/list',
+    url: 'order/voucher-order/list',
     method: 'get',
     params: query
   })
@@ -12,7 +12,7 @@ export function listOrder(query) {
 // 查询优惠券订单表详细
 export function getOrder(id) {
   return request({
-    url: '/order/' + id,
+    url: 'order/voucher-order/' + id,
     method: 'get'
   })
 }
@@ -20,7 +20,7 @@ export function getOrder(id) {
 // 新增优惠券订单表
 export function addOrder(data) {
   return request({
-    url: '/order',
+    url: 'order/voucher-order',
     method: 'post',
     data: data
   })
@@ -29,7 +29,7 @@ export function addOrder(data) {
 // 修改优惠券订单表
 export function updateOrder(data) {
   return request({
-    url: '/order',
+    url: 'order/voucher-order',
     method: 'put',
     data: data
   })
@@ -38,7 +38,7 @@ export function updateOrder(data) {
 // 删除优惠券订单表
 export function delOrder(id) {
   return request({
-    url: '/order/' + id,
+    url: 'order/voucher-order/' + id,
     method: 'delete'
   })
 }
