@@ -42,3 +42,11 @@ export function delComment(id) {
     method: 'delete'
   })
 }
+
+// ai生成评论
+export function aiCreateComment() {
+  return request({
+    url: '/comment/aiCreateComment',
+    method: 'post'
+  })
+}

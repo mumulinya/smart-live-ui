@@ -49,3 +49,29 @@ export function flushCache() {
     method: 'get'
   })
 }
+// 查询店铺列表
+export function shopList() {
+  return request({
+    url: '/shop/shopList',
+    method: 'get',
+  })
+}
+// 查询店铺列表
+export function shopTypeList() {
+  return request({
+    url: '/shop/shop-type/list',
+    method: 'get',
+  })
+}
+export function allPublish(){
+  return request({
+    url: '/shop/allPublish',
+    method: 'post',
+  })
+}
+export function publish(id){
+  return request({
+    url: '/shop/publish/'+id,
+    method: 'post',
+  })
+}

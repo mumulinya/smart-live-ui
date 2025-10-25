@@ -1,6 +1,6 @@
 import request from '@/utils/request'
 
-// 查询用户列表
+// 分页查询用户列表
 export function listUser(query) {
   return request({
     url: '/user/list',
@@ -40,5 +40,25 @@ export function delUser(id) {
   return request({
     url: '/user/' + id,
     method: 'delete'
+  })
+}
+// 查询用户列表
+export function userList(query) {
+  return request({
+    url: '/user/userList',
+    method: 'get',
+    params: query
+  })
+}
+export function allPublish(){
+  return request({
+    url: '/user/allPublish',
+    method: 'post',
+  })
+}
+export function publish(id){
+  return request({
+    url: '/user/publish/'+id,
+    method: 'post',
   })
 }

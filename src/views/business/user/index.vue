@@ -66,6 +66,24 @@
           v-hasPermi="['user:user:export']"
         >导出</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          plain
+          icon="el-icon-s-promotion"
+          size="mini"
+          @click="handleAllPublish"
+        >全量发布</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="success"
+          plain
+          icon="el-icon-s-promotion"
+          size="mini"
+          @click="handlePublish"
+        >发布</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -75,7 +93,7 @@
       <el-table-column label="昵称" align="center" prop="nickName" />
       <el-table-column label="人物头像" align="center" prop="icon" width="100">
         <template slot-scope="scope">
-          <image-preview :src="scope.row.icon" :width="50" :height="50"/>
+          <image-preview :src="baseUrl+scope.row.icon" :width="50" :height="50"/>
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
@@ -131,12 +149,12 @@
 </template>
 
 <script>
-import { listUser, getUser, delUser, addUser, updateUser } from "@/api/user/user"
-
+import { listUser, getUser, delUser, addUser, updateUser,allPublish,publish } from "@/api/user/user"
 export default {
   name: "User",
   data() {
     return {
+      baseUrl: process.env.VUE_FILE_BASE_API,
       // 遮罩层
       loading: true,
       // 选中数组
@@ -182,6 +200,7 @@ export default {
   },
   created() {
     this.getList()
+    console.log("文件上传路径"+process.env.VUE_FILE_BASE_API)
   },
   methods: {
     /** 查询用户列表 */
@@ -278,7 +297,22 @@ export default {
       this.download('user/user/export', {
         ...this.queryParams
       }, `user_${new Date().getTime()}.xlsx`)
-    }
+    },
+    handleAllPublish(){
+      allPublish().then(response => {
+        response.msg && this.$modal.msgSuccess(response.msg)
+      }).catch(() => {
+      })
+    },
+    handlePublish(row) {
+      const ids = row.id || this.ids
+      this.$modal.confirm('是否确认发布用户？').then(function() {
+        return publish(ids)
+      }).then(() => {
+        this.getList()
+        this.$modal.msgSuccess("发布成功")
+      }).catch(() => {})
+    },
   }
 }
 </script>

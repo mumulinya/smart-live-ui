@@ -86,6 +86,24 @@
           v-hasPermi="['marketing:voucher:export']"
         >导出</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          plain
+          icon="el-icon-s-promotion"
+          size="mini"
+          @click="handleAllPublish"
+        >全量发布</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="success"
+          plain
+          icon="el-icon-s-promotion"
+          size="mini"
+          @click="handlePublish"
+        >发布</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -340,8 +358,8 @@
 </template>
 
 <script>
-import { listVoucher, getVoucher, delVoucher, addVoucher, updateVoucher, changeVoucherStatus } from "@/api/marketing/voucher"
-import { listShop } from "@/api/shop/shop"
+import { listVoucher, getVoucher, delVoucher, addVoucher, updateVoucher, changeVoucherStatus,allPublish,publish } from "@/api/marketing/voucher"
+import { listShop,  shopList} from "@/api/shop/shop"
 
 export default {
   name: "Voucher",
@@ -491,8 +509,8 @@ export default {
     },
     /** 获取店铺列表 */
     getShopList() {
-      listShop({ pageNum: 1, pageSize: 1000 }).then(response => {
-        this.shopList = response.rows || response.data || []
+      shopList().then(response => {
+        this.shopList = response.data || []
       }).catch(error => {
         console.error('获取店铺列表失败:', error)
         this.shopList = []
@@ -644,7 +662,22 @@ export default {
       this.download('marketing/voucher/export', {
         ...this.queryParams
       }, `voucher_${new Date().getTime()}.xlsx`)
-    }
+    },
+    handleAllPublish(){
+      allPublish().then(response => {
+        response.msg && this.$modal.msgSuccess(response.msg)
+      }).catch(() => {
+      })
+    },
+    handlePublish(row) {
+      const ids = row.id || this.ids
+      this.$modal.confirm('是否确认发布代金券？').then(function() {
+        return publish(ids)
+      }).then(() => {
+        this.getList()
+        this.$modal.msgSuccess("发布成功")
+      }).catch(() => {})
+    },
   }
 }
 </script>

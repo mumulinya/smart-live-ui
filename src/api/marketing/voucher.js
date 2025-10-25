@@ -1,6 +1,6 @@
 import request from '@/utils/request'
 
-// 查询优惠券列表
+// 分页查询优惠券列表
 export function listVoucher(query) {
   return request({
     url: '/marketing/voucher/list',
@@ -40,5 +40,24 @@ export function delVoucher(id) {
   return request({
     url: '/marketing/voucher/' + id,
     method: 'delete'
+  })
+}
+// 查询优惠券列表
+export function voucherList() {
+  return request({
+    url: '/marketing/voucher/voucherList',
+    method: 'get',
+  })
+}
+export function allPublish(){
+  return request({
+    url: '/marketing/voucher/allPublish',
+    method: 'post',
+  })
+}
+export function publish(id){
+  return request({
+    url: '/marketing/voucher/publish/'+id,
+    method: 'post',
   })
 }

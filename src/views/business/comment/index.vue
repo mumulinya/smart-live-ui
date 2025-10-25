@@ -78,6 +78,16 @@
           v-hasPermi="['comment:comment:export']"
         >导出</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          plain
+          icon="el-icon-plus"
+          size="mini"
+          @click="handleAiCreate"
+        >ai生成</el-button>
+      </el-col>
+
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -231,10 +241,10 @@
 </template>
 
 <script>
-import { listComment, getComment, delComment, addComment, updateComment } from "@/api/comment/comment"
-import { listUser } from "@/api/user/user"
-import { listBlog } from "@/api/blog/blog"
-import { listShop } from "@/api/shop/shop"
+import { listComment, getComment, delComment, addComment, updateComment,aiCreateComment } from "@/api/comment/comment"
+import {listUser, userList} from "@/api/user/user"
+import {blogList, listBlog} from "@/api/blog/blog"
+import { shopList } from "@/api/shop/shop"
 
 export default {
   name: "Comment",
@@ -309,8 +319,8 @@ export default {
     /** 加载用户列表 */
     async loadUserList() {
       try {
-        const response = await listUser()
-        this.userList = response.rows || []
+        const response = await userList()
+        this.userList = response.data || []
         // 用户列表加载完成后，再加载评论列表
         this.getList()
       } catch (error) {
@@ -382,12 +392,12 @@ export default {
       try {
         // 并行加载博客和店铺列表
         const [blogsResponse, shopsResponse] = await Promise.all([
-          listBlog(),
-          listShop()
+          blogList(),
+          shopList()
         ])
 
-        this.blogList = blogsResponse.rows || []
-        this.shopList = shopsResponse.rows || []
+        this.blogList = blogsResponse.data || []
+        this.shopList = shopsResponse.data || []
 
         // 更新评论列表的显示数据
         this.commentList = this.commentList.map(item => {
@@ -532,6 +542,12 @@ export default {
       this.download('comment/comment/export', {
         ...this.queryParams
       }, `comment_${new Date().getTime()}.xlsx`)
+    },
+    handleAiCreate(){
+      aiCreateComment().then(response => {
+        this.$modal.msgSuccess("创建成功")
+        this.getList()
+      })
     }
   }
 }

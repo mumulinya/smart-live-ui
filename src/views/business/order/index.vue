@@ -369,9 +369,9 @@
 
 <script>
 import { listOrder, getOrder, delOrder, addOrder, updateOrder } from "@/api/order/order"
-import { listUser } from "@/api/user/user"
-import { listVoucher } from "@/api/marketing/voucher"
-import { listShop } from "@/api/shop/shop"
+import {listUser, userList} from "@/api/user/user"
+import {listVoucher, voucherList} from "@/api/marketing/voucher"
+import {listShop, shopList} from "@/api/shop/shop"
 
 export default {
   name: "Order",
@@ -459,20 +459,20 @@ export default {
     },
     /** 获取用户列表 */
     getUserList() {
-      listUser({ pageNum: 1, pageSize: 1000 }).then(response => {
-        this.userList = response.rows
+      userList().then(response => {
+        this.userList = response.data
       })
     },
     /** 获取优惠券列表 */
     getVoucherList() {
-      listVoucher({ pageNum: 1, pageSize: 1000 }).then(response => {
-        this.voucherList = response.rows
+      voucherList().then(response => {
+        this.voucherList = response.data|| []
       })
     },
     /** 获取店铺列表 */
     getShopList() {
-      listShop({ pageNum: 1, pageSize: 1000 }).then(response => {
-        this.shopList = response.rows
+      shopList().then(response => {
+        this.shopList = response.data|| []
       })
     },
     /** 根据用户ID获取用户名 */

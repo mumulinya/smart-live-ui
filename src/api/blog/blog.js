@@ -1,6 +1,6 @@
 import request from '@/utils/request'
 
-// 查询博客列表
+// 分页查询博客列表
 export function listBlog(query) {
   return request({
     url: '/blog/list',
@@ -40,5 +40,25 @@ export function delBlog(id) {
   return request({
     url: '/blog/' + id,
     method: 'delete'
+  })
+}
+
+// 查询博客列表
+export function blogList() {
+  return request({
+    url: '/blog/blogList',
+    method: 'get',
+  })
+}
+export function allPublish(){
+  return request({
+    url: '/blog/allPublish',
+    method: 'post',
+  })
+}
+export function publish(id){
+  return request({
+    url: '/blog/publish/'+id,
+    method: 'post',
   })
 }

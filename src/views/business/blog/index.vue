@@ -1,6 +1,21 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
+      <el-form-item label="店铺类型" prop="typeId">
+        <el-select
+          v-model="queryParams.typeId"
+          placeholder="请选择店铺类型"
+          clearable
+          style="width: 200px"
+        >
+          <el-option
+            v-for="type in shopTypeList"
+            :key="type.id"
+            :label="type.name"
+            :value="type.id"
+          />
+        </el-select>
+      </el-form-item>
       <el-form-item label="店铺" prop="shopId">
         <el-select
           v-model="queryParams.shopId"
@@ -91,11 +106,34 @@
           v-hasPermi="['blog:blog:export']"
         >导出</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          plain
+          icon="el-icon-s-promotion"
+          size="mini"
+          @click="handleAllPublish"
+        >全量发布</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="success"
+          plain
+          icon="el-icon-s-promotion"
+          size="mini"
+          @click="handlePublish"
+        >发布</el-button>
+      </el-col>
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
     <el-table v-loading="loading" :data="blogList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
+      <el-table-column label="店铺类型" align="center" width="120" show-overflow-tooltip>
+        <template slot-scope="scope">
+          <span>{{ getShopTypeName(scope.row.typeId) }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="店铺" align="center" width="120" show-overflow-tooltip>
         <template slot-scope="scope">
           <span>{{ getShopName(scope.row.shopId) }}</span>
@@ -159,10 +197,30 @@
     <!-- 添加或修改博客对话框 -->
     <el-dialog :title="title" :visible.sync="open" width="700px" append-to-body>
       <el-form ref="form" :model="form" :rules="rules" label-width="120px">
-        <el-form-item label="店铺" prop="shopId">
-          <el-select v-model="form.shopId" placeholder="请选择店铺" style="width: 100%">
+        <el-form-item label="店铺类型" prop="typeId">
+          <el-select
+            v-model="form.typeId"
+            placeholder="请选择店铺类型"
+            style="width: 100%"
+            @change="handleTypeChange"
+          >
             <el-option
-              v-for="shop in shopList"
+              v-for="type in shopTypeList"
+              :key="type.id"
+              :label="type.name"
+              :value="type.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="店铺" prop="shopId">
+          <el-select
+            v-model="form.shopId"
+            placeholder="请选择店铺"
+            style="width: 100%"
+            :disabled="!form.typeId"
+          >
+            <el-option
+              v-for="shop in filteredShopList"
               :key="shop.id"
               :label="shop.name"
               :value="shop.id"
@@ -223,6 +281,9 @@
     <el-dialog title="博客详情" :visible.sync="detailOpen" width="800px" append-to-body>
       <el-descriptions :column="2" border>
         <el-descriptions-item label="博客ID">{{ detailForm.id }}</el-descriptions-item>
+        <el-descriptions-item label="店铺类型">
+          {{ getShopTypeName(detailForm.typeId) }}
+        </el-descriptions-item>
         <el-descriptions-item label="店铺">
           {{ getShopName(detailForm.shopId) }}
         </el-descriptions-item>
@@ -274,9 +335,10 @@
 </template>
 
 <script>
-import { listBlog, getBlog, delBlog, addBlog, updateBlog } from "@/api/blog/blog"
-import { listUser } from "@/api/user/user"
-import { listShop } from "@/api/shop/shop"
+import { listBlog, getBlog, delBlog, addBlog, updateBlog,publish,allPublish } from "@/api/blog/blog"
+import { listUser,userList } from "@/api/user/user"
+import { listShop,  shopList} from "@/api/shop/shop"
+import { shopTypeList } from "@/api/shop/shop"
 
 export default {
   name: "Blog",
@@ -300,6 +362,10 @@ export default {
       userList: [],
       // 店铺列表
       shopList: [],
+      // 店铺类型列表
+      shopTypeList: [],
+      // 过滤后的店铺列表（根据类型筛选）
+      filteredShopList: [],
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -312,6 +378,7 @@ export default {
       queryParams: {
         pageNum: 1,
         pageSize: 10,
+        typeId: null,
         shopId: null,
         userId: null,
         title: null,
@@ -319,6 +386,7 @@ export default {
       // 表单参数
       form: {
         id: null,
+        typeId: null,
         shopId: null,
         userId: null,
         title: null,
@@ -333,6 +401,9 @@ export default {
       detailForm: {},
       // 表单校验
       rules: {
+        typeId: [
+          { required: true, message: "请选择店铺类型", trigger: "change" }
+        ],
         shopId: [
           { required: true, message: "请选择店铺", trigger: "change" }
         ],
@@ -355,6 +426,7 @@ export default {
     this.getList()
     this.getUserList()
     this.getShopList()
+    this.getShopTypeList()
   },
   methods: {
     /** 查询博客列表 */
@@ -368,15 +440,28 @@ export default {
     },
     /** 查询用户列表 */
     getUserList() {
-      listUser().then(response => {
-        this.userList = response.rows || []
+      userList().then(response => {
+        this.userList = response.data || []
       })
     },
     /** 查询店铺列表 */
     getShopList() {
-      listShop().then(response => {
-        this.shopList = response.rows || []
+      shopList().then(response => {
+        this.shopList = response.data || []
+        this.filteredShopList = [...this.shopList]
       })
+    },
+    /** 查询店铺类型列表 */
+    getShopTypeList() {
+      shopTypeList().then(response => {
+        this.shopTypeList = response.data || []
+      })
+    },
+    /** 根据店铺类型ID获取店铺类型名称 */
+    getShopTypeName(typeId) {
+      if (!typeId) return '未知类型'
+      const type = this.shopTypeList.find(item => item.id == typeId)
+      return type ? type.name : '未知类型'
     },
     /** 根据店铺ID获取店铺名称 */
     getShopName(shopId) {
@@ -389,6 +474,19 @@ export default {
       if (!userId) return '未知用户'
       const user = this.userList.find(item => item.id == userId)
       return user ? user.nickName : '未知用户'
+    },
+    /** 店铺类型改变时的处理 */
+    handleTypeChange(typeId) {
+      // 清空已选择的店铺
+      this.form.shopId = null
+
+      if (typeId) {
+        // 根据类型筛选店铺
+        this.filteredShopList = this.shopList.filter(shop => shop.typeId == typeId)
+      } else {
+        // 如果没有选择类型，显示所有店铺
+        this.filteredShopList = [...this.shopList]
+      }
     },
 
     /** 上传前校验 */
@@ -447,6 +545,7 @@ export default {
     reset() {
       this.form = {
         id: null,
+        typeId: null,
         shopId: null,
         userId: null,
         title: null,
@@ -458,6 +557,7 @@ export default {
         updateTime: null
       }
       this.fileList = []
+      this.filteredShopList = [...this.shopList]
       this.resetForm("form")
     },
     /** 搜索按钮操作 */
@@ -488,6 +588,14 @@ export default {
       const id = row.id || this.ids
       getBlog(id).then(response => {
         this.form = response.data
+        // 根据店铺ID设置类型ID
+        if (this.form.shopId) {
+          const shop = this.shopList.find(item => item.id == this.form.shopId)
+          if (shop) {
+            this.form.typeId = shop.typeId
+            this.handleTypeChange(shop.typeId)
+          }
+        }
         // 将图片字符串转换为文件列表格式
         if (this.form.images) {
           const imageUrls = this.form.images.split(',').filter(img => img.trim())
@@ -551,7 +659,22 @@ export default {
       this.download('blog/blog/export', {
         ...this.queryParams
       }, `blog_${new Date().getTime()}.xlsx`)
-    }
+    },
+    handleAllPublish(){
+      allPublish().then(response => {
+        response.msg && this.$modal.msgSuccess(response.msg)
+      }).catch(() => {
+      })
+    },
+    handlePublish(row) {
+      const ids = row.id || this.ids
+      this.$modal.confirm('是否确认发布博客？').then(function() {
+        return publish(ids)
+      }).then(() => {
+        this.getList()
+        this.$modal.msgSuccess("发布成功")
+      }).catch(() => {})
+    },
   }
 }
 </script>

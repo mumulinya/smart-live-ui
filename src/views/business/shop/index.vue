@@ -78,11 +78,31 @@
         <el-button
           type="primary"
           plain
-          icon="el-icon-plus"
+          icon="el-icon-refresh"
           size="mini"
           @click="handleFlushCache"
         >刷新缓存</el-button>
       </el-col>
+
+      <el-col :span="1.5">
+        <el-button
+          type="primary"
+          plain
+          icon="el-icon-s-promotion"
+          size="mini"
+          @click="handleAllPublish"
+        >全量发布</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
+          type="success"
+          plain
+          icon="el-icon-s-promotion"
+          size="mini"
+          @click="handlePublish"
+        >发布</el-button>
+      </el-col>
+
       <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
     </el-row>
 
@@ -397,7 +417,7 @@
 </template>
 
 <script>
-import { listShop, getShop, delShop, addShop, updateShop, flushCache } from "@/api/shop/shop"
+import {listShop, getShop, delShop, addShop, updateShop, flushCache, allPublish, publish} from "@/api/shop/shop"
 
 // 简化版地图加载函数
 function loadMapScript() {
@@ -990,6 +1010,21 @@ export default {
         response.msg && this.$modal.msgSuccess(response.msg)
       }).catch(() => {
       })
+    },
+    handleAllPublish(){
+      allPublish().then(response => {
+        response.msg && this.$modal.msgSuccess(response.msg)
+      }).catch(() => {
+      })
+    },
+    handlePublish(row) {
+      const ids = row.id || this.ids
+      this.$modal.confirm('是否确认发布店铺？').then(function() {
+        return publish(ids)
+      }).then(() => {
+        this.getList()
+        this.$modal.msgSuccess("发布成功")
+      }).catch(() => {})
     },
   }
 }
