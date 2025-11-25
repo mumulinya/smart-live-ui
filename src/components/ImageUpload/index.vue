@@ -250,7 +250,7 @@ export default {
 
 ::v-deep .el-upload-list--picture-card.is-disabled + .el-upload--picture-card {
   display: none !important;
-} 
+}
 
 // 去掉动画效果
 ::v-deep .el-list-enter-active,

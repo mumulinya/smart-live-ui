@@ -45,12 +45,11 @@
               <i class="el-icon-shopping-bag-1"></i>
             </div>
             <div class="stats-content">
-              <div class="stats-number">{{ statsData.todayOrders }}</div>
-              <div class="stats-label">今日订单</div>
+              <div class="stats-number">{{ statsData.totalOrders }}</div>
+              <div class="stats-label">总订单</div>
             </div>
           </div>
         </el-col>
-
       </el-row>
     </div>
 
@@ -103,14 +102,14 @@
           <template #header>
             <div class="dynamic-header">
               <span>最新店铺</span>
-              <el-button type="text" @click="$router.push('/shop/manage')">查看全部</el-button>
+              <el-button type="text" @click="$router.push('/business/shop')">查看全部</el-button>
             </div>
           </template>
           <div class="dynamic-list">
             <div v-for="shop in recentShops" :key="shop.id" class="dynamic-item">
               <div class="dynamic-item-main">
                 <div class="dynamic-title">{{ shop.name }}</div>
-                <div class="dynamic-desc">{{ shop.category }} · {{ shop.address }}</div>
+                <div class="dynamic-desc">{{ getShopTypeName(shop.category)}} · {{ shop.address }}</div>
                 <div class="dynamic-time">{{ shop.createTime }}</div>
               </div>
               <el-tag :type="shop.status === 1 ? 'success' : 'danger'" size="small">
@@ -125,7 +124,7 @@
           <template #header>
             <div class="dynamic-header">
               <span>最新订单</span>
-              <el-button type="text" @click="$router.push('/order/manage')">查看全部</el-button>
+              <el-button type="text" @click="$router.push('/business/order')">查看全部</el-button>
             </div>
           </template>
           <div class="dynamic-list">
@@ -147,7 +146,7 @@
           <template #header>
             <div class="dynamic-header">
               <span>最新博客</span>
-              <el-button type="text" @click="$router.push('/blog/manage')">查看全部</el-button>
+              <el-button type="text" @click="$router.push('/business/blog')">查看全部</el-button>
             </div>
           </template>
           <div class="dynamic-list">
@@ -165,35 +164,21 @@
         </el-card>
       </el-col>
     </el-row>
-
-    <!-- 快捷操作 -->
-    <el-card class="quick-action-card" shadow="never">
-      <template #header>
-        <span>快捷操作</span>
-      </template>
-      <div class="quick-actions">
-        <el-button type="primary" icon="el-icon-plus" @click="$router.push('/shop/add')">
-          新增店铺
-        </el-button>
-        <el-button type="success" icon="el-icon-edit" @click="$router.push('/blog/add')">
-          发布博客
-        </el-button>
-        <el-button type="warning" icon="el-icon-goods" @click="$router.push('/coupon/add')">
-          创建代金券
-        </el-button>
-        <el-button type="info" icon="el-icon-shopping-bag-1" @click="$router.push('/order/manage')">
-          订单管理
-        </el-button>
-        <el-button type="danger" icon="el-icon-data-analysis" @click="$router.push('/statistics')">
-          数据统计
-        </el-button>
-      </div>
-    </el-card>
   </div>
 </template>
 
 <script>
 import * as echarts from 'echarts'
+// 引入封装的首页API请求函数
+import {
+  getIndexStats,
+  getShopStats,
+  getOrderStats,
+  getCouponStats,
+  getRecentOrders,
+  getRecentBlogs, getRecentShops
+} from '@/api/index'
+import {listShopType} from "@/api/shop/shopType";
 
 export default {
   name: "Dashboard",
@@ -202,24 +187,31 @@ export default {
       version: "1.0.0",
       shopChartType: 'week',
       orderChartType: 'week',
-
-      // 数据
+      loading: false, // 加载状态
+      // 新增：店铺类型列表（下拉框数据源）
+      shopTypeList: [],
+      // 核心数据（匹配后端返回格式）
       statsData: {
         totalShops: 0,
         totalBlogs: 0,
         totalCoupons: 0,
-        todayOrders: 0,
+        totalOrders: 0,
         todayReviews: 0
       },
-      recentShops: [],
-      recentOrders: [],
-      recentBlogs: [],
+      recentShops: [], // 最新店铺列表
+      recentOrders: [], // 最新订单列表
+      recentBlogs: [], // 最新博客列表
+      // 列表总数（可选）
+      shopTotal: 0,
+      orderTotal: 0,
+      blogTotal: 0,
 
+      // 图表实例
       shopChart: null,
       orderChart: null,
       couponChart: null,
 
-      // 临时模拟数据
+      // 降级mock数据（接口失败时使用）
       mockData: {
         shopChart: {
           week: {
@@ -249,17 +241,101 @@ export default {
           used: 156,
           unused: 45,
           expired: 33
+        },
+        totalOrders: [
+          {
+            id: 1,
+            name: '海底捞火锅(朝阳大悦城店)',
+            category: '火锅',
+            address: '朝阳区建国路88号',
+            status: 1,
+            createTime: '2024-01-15 14:30:22'
+          },
+          {
+            id: 2,
+            name: '星巴克臻选(三里屯店)',
+            category: '咖啡',
+            address: '朝阳区三里屯路19号',
+            status: 1,
+            createTime: '2024-01-15 11:20:15'
+          },
+          {
+            id: 3,
+            name: '西贝莜面村(王府井店)',
+            category: '西北菜',
+            address: '东城区王府井大街138号',
+            status: 1,
+            createTime: '2024-01-14 16:45:33'
+          }
+        ],
+        recentOrders: [
+          {
+            id: 1,
+            orderNo: 'DD202401150001',
+            shopName: '海底捞火锅',
+            amount: 268,
+            status: 3,
+            createTime: '2024-01-15 14:25:10'
+          },
+          {
+            id: 2,
+            orderNo: 'DD202401150002',
+            shopName: '星巴克咖啡',
+            amount: 45,
+            status: 2,
+            createTime: '2024-01-15 13:40:22'
+          },
+          {
+            id: 3,
+            orderNo: 'DD202401150003',
+            shopName: '西贝莜面村',
+            amount: 189,
+            status: 1,
+            createTime: '2024-01-15 12:15:35'
+          }
+        ],
+        recentBlogs: [
+          {
+            id: 1,
+            title: '2024年最值得尝试的10家餐厅，吃货必看！',
+            summary: '本文为您推荐今年最受欢迎的餐厅，从环境、口味、服务等多个维度进行评价...',
+            status: 1,
+            createTime: '2024-01-15 10:20:15'
+          },
+          {
+            id: 2,
+            title: '冬日暖心美食推荐：火锅的正确打开方式',
+            summary: '寒冷的冬天最适合吃火锅了，但你知道如何选择最适合自己的火锅店吗？...',
+            status: 1,
+            createTime: '2024-01-14 15:40:22'
+          },
+          {
+            id: 3,
+            title: '探店报告：新开业的日料店究竟如何？',
+            summary: '实地探访最近新开的一家日料店，从食材新鲜度、服务态度、环境氛围等方面详细评测...',
+            status: 0,
+            createTime: '2024-01-14 11:25:18'
+          }
+        ],
+        statsData: {
+          totalShops: 156,
+          totalBlogs: 89,
+          totalCoupons: 234,
+          totalOrders: 58,
+          todayReviews: 89
         }
       }
     }
   },
   mounted() {
+    this.getShopTypeList() // 初始化加载店铺类型列表
     this.initData()
     this.$nextTick(() => {
       this.initCharts()
     })
   },
   beforeUnmount() {
+    // 销毁图表实例，避免内存泄漏
     if (this.shopChart) {
       this.shopChart.dispose()
     }
@@ -272,21 +348,53 @@ export default {
   },
   methods: {
     /**
-     * 初始化页面数据
+     * 初始化页面数据（核心：调用真实接口，适配rows/total格式）
      */
     async initData() {
+      this.loading = true
       try {
-        // 使用模拟数据
-        await this.useMockData()
+        // 1. 获取首页统计数据
+        const statsRes = await getIndexStats()
+        if (statsRes.code === 200) {
+          this.statsData = statsRes.data
+        } else {
+          throw new Error('统计数据请求失败')
+        }
+
+        // 2. 获取最新店铺列表（指定的请求方式：rows/total）
+        await getRecentShops({ limit: 5 }).then(response => {
+          this.recentShops = response.data
+        }).catch(() => {
+          this.recentShops = this.mockData.recentShops
+        })
+
+        // 3. 获取最新订单列表（指定的请求方式：rows/total）
+        await getRecentOrders({ limit: 5 }).then(response => {
+          this.recentOrders = response.data.rows
+          this.orderTotal = response.data.total
+        }).catch(() => {
+          this.recentOrders = this.mockData.recentOrders
+        })
+
+        // 4. 获取最新博客列表（指定的请求方式：rows/total）
+        await getRecentBlogs({ limit: 5 }).then(response => {
+          this.recentBlogs = response.data.rows
+          this.blogTotal = response.data.total
+        }).catch(() => {
+          this.recentBlogs = this.mockData.recentBlogs
+        })
 
       } catch (error) {
         console.error('初始化数据失败:', error)
-        await this.useMockData()
+        // 全部失败则使用mock数据降级
+        this.useMockData()
+      } finally {
+        this.loading = false
       }
     },
 
     /**
-     * 初始化图表
+     * 初始化图表实例
      */
     initCharts() {
       this.shopChart = echarts.init(document.getElementById('shopChart'))
@@ -295,50 +403,66 @@ export default {
       this.updateShopChart()
       this.updateOrderChart()
       this.updateCouponChart()
+
+      // 监听窗口大小变化，自适应图表
+      window.addEventListener('resize', () => {
+        this.shopChart?.resize()
+        this.orderChart?.resize()
+        this.couponChart?.resize()
+      })
     },
 
     /**
-     * 更新店铺图表
+     * 更新店铺图表（调用真实接口）
      */
     async updateShopChart() {
       try {
-        const data = this.mockData.shopChart[this.shopChartType]
-        this.renderShopChart(data)
-
+        await getShopStats(this.shopChartType).then(response => {
+          if (response.code === 200) {
+            this.renderShopChart(response.data)
+          } else {
+            throw new Error(response.msg)
+          }
+        })
       } catch (error) {
         console.error('更新店铺图表失败:', error)
-        const data = this.mockData.shopChart[this.shopChartType]
-        this.renderShopChart(data)
+        this.renderShopChart(this.mockData.shopChart[this.shopChartType])
       }
     },
 
     /**
-     * 更新订单图表
+     * 更新订单图表（调用真实接口）
      */
     async updateOrderChart() {
       try {
-        const data = this.mockData.orderChart[this.orderChartType]
-        this.renderOrderChart(data)
-
+        await getOrderStats(this.orderChartType).then(response => {
+          if (response.code === 200) {
+            this.renderOrderChart(response.data)
+          } else {
+            throw new Error(response.msg)
+          }
+        })
       } catch (error) {
         console.error('更新订单图表失败:', error)
-        const data = this.mockData.orderChart[this.orderChartType]
-        this.renderOrderChart(data)
+        this.renderOrderChart(this.mockData.orderChart[this.orderChartType])
       }
     },
 
     /**
-     * 更新代金券图表
+     * 更新代金券图表（调用真实接口）
      */
     async updateCouponChart() {
       try {
-        const data = this.mockData.couponChart
-        this.renderCouponChart(data)
-
+        await getCouponStats().then(response => {
+          if (response.code === 200) {
+            this.renderCouponChart(response.data)
+          } else {
+            throw new Error(response.msg)
+          }
+        })
       } catch (error) {
         console.error('更新代金券图表失败:', error)
-        const data = this.mockData.couponChart
-        this.renderCouponChart(data)
+        this.renderCouponChart(this.mockData.couponChart)
       }
     },
 
@@ -508,14 +632,14 @@ export default {
     },
 
     /**
-     * 处理店铺图表类型切换
+     * 店铺图表类型切换
      */
     handleShopChartTypeChange() {
       this.updateShopChart()
     },
 
     /**
-     * 处理订单图表类型切换
+     * 订单图表类型切换
      */
     handleOrderChartTypeChange() {
       this.updateOrderChart()
@@ -549,101 +673,35 @@ export default {
       return statusMap[status] || '未知状态'
     },
 
-    /**
-     * 使用模拟数据
-     */
-    async useMockData() {
-      // 模拟统计数据
-      this.statsData = {
-        totalShops: 156,
-        totalBlogs: 89,
-        totalCoupons: 234,
-        todayOrders: 58,
-        todayReviews: 89
-      }
-
-      // 模拟最新店铺
-      this.recentShops = [
-        {
-          id: 1,
-          name: '海底捞火锅(朝阳大悦城店)',
-          category: '火锅',
-          address: '朝阳区建国路88号',
-          status: 1,
-          createTime: '2024-01-15 14:30:22'
-        },
-        {
-          id: 2,
-          name: '星巴克臻选(三里屯店)',
-          category: '咖啡',
-          address: '朝阳区三里屯路19号',
-          status: 1,
-          createTime: '2024-01-15 11:20:15'
-        },
-        {
-          id: 3,
-          name: '西贝莜面村(王府井店)',
-          category: '西北菜',
-          address: '东城区王府井大街138号',
-          status: 1,
-          createTime: '2024-01-14 16:45:33'
-        }
-      ]
-
-      // 模拟最新订单
-      this.recentOrders = [
-        {
-          id: 1,
-          orderNo: 'DD202401150001',
-          shopName: '海底捞火锅',
-          amount: 268,
-          status: 3,
-          createTime: '2024-01-15 14:25:10'
-        },
-        {
-          id: 2,
-          orderNo: 'DD202401150002',
-          shopName: '星巴克咖啡',
-          amount: 45,
-          status: 2,
-          createTime: '2024-01-15 13:40:22'
-        },
-        {
-          id: 3,
-          orderNo: 'DD202401150003',
-          shopName: '西贝莜面村',
-          amount: 189,
-          status: 1,
-          createTime: '2024-01-15 12:15:35'
-        }
-      ]
-
-      // 模拟最新博客
-      this.recentBlogs = [
-        {
-          id: 1,
-          title: '2024年最值得尝试的10家餐厅，吃货必看！',
-          summary: '本文为您推荐今年最受欢迎的餐厅，从环境、口味、服务等多个维度进行评价...',
-          status: 1,
-          createTime: '2024-01-15 10:20:15'
-        },
-        {
-          id: 2,
-          title: '冬日暖心美食推荐：火锅的正确打开方式',
-          summary: '寒冷的冬天最适合吃火锅了，但你知道如何选择最适合自己的火锅店吗？...',
-          status: 1,
-          createTime: '2024-01-14 15:40:22'
-        },
-        {
-          id: 3,
-          title: '探店报告：新开业的日料店究竟如何？',
-          summary: '实地探访最近新开的一家日料店，从食材新鲜度、服务态度、环境氛围等方面详细评测...',
-          status: 0,
-          createTime: '2024-01-14 11:25:18'
-        }
-      ]
+    /** 新增：加载店铺类型列表（下拉框数据源） */
+    getShopTypeList() {
+      listShopType().then(response => {
+        this.shopTypeList = response.data || [] // 适配后端返回格式
+      }).catch(error => {
+        console.error('加载店铺类型失败:', error)
+        this.$message.error('加载店铺类型失败，请刷新页面')
+      })
+    },
+    /** 新增：根据typeId获取店铺类型名称 */
+    getShopTypeName(typeId) {
+      if (!typeId) return ''
+      const type = this.shopTypeList.find(item => item.id === typeId)
+      return type ? type.name : '未知类型'
     },
 
+    /**
+     * 降级使用mock数据
+     */
+    useMockData() {
+      this.statsData = this.mockData.statsData
+      this.totalOrders = this.mockData.totalOrders
+      this.recentOrders = this.mockData.recentOrders
+      this.recentBlogs = this.mockData.recentBlogs
+    },
+
+    /**
+     * 打开新窗口（备用方法）
+     */
     goTarget(url) {
       window.open(url, '_blank')
     }

@@ -3,9 +3,9 @@ import request from '@/utils/request'
 /**
  * 获取首页统计数据
  */
-export function getDashboardStats() {
+export function getIndexStats() {
   return request({
-    url: '/api/dashboard/stats',
+    url: '/index/stats',
     method: 'get'
   })
 }
@@ -16,7 +16,7 @@ export function getDashboardStats() {
  */
 export function getShopStats(type = 'week') {
   return request({
-    url: '/api/dashboard/shop-stats',
+    url: '/index/shop-stats',
     method: 'get',
     params: { type }
   })
@@ -28,7 +28,7 @@ export function getShopStats(type = 'week') {
  */
 export function getOrderStats(type = 'week') {
   return request({
-    url: '/api/dashboard/order-stats',
+    url: '/index/order-stats',
     method: 'get',
     params: { type }
   })
@@ -39,7 +39,7 @@ export function getOrderStats(type = 'week') {
  */
 export function getCouponStats() {
   return request({
-    url: '/api/dashboard/coupon-stats',
+    url: '/index/coupon-stats',
     method: 'get'
   })
 }
@@ -50,7 +50,7 @@ export function getCouponStats() {
  */
 export function getRecentShops(limit = 5) {
   return request({
-    url: '/api/dashboard/recent-shops',
+    url: '/index/recent-shops',
     method: 'get',
     params: { limit }
   })
@@ -62,7 +62,7 @@ export function getRecentShops(limit = 5) {
  */
 export function getRecentOrders(limit = 5) {
   return request({
-    url: '/api/dashboard/recent-orders',
+    url: '/index/recent-orders',
     method: 'get',
     params: { limit }
   })
@@ -74,7 +74,7 @@ export function getRecentOrders(limit = 5) {
  */
 export function getRecentBlogs(limit = 5) {
   return request({
-    url: '/api/dashboard/recent-blogs',
+    url: '/index/recent-blogs',
     method: 'get',
     params: { limit }
   })

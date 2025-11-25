@@ -127,22 +127,30 @@
       </el-table-column>
       <el-table-column label="支付金额" align="center" prop="payValue" width="100">
         <template slot-scope="scope">
-          <span>{{ (scope.row.payValue / 100).toFixed(2) }}元</span>
+          <span>{{ (scope.row.payValue / 1).toFixed(2) }}元</span>
         </template>
       </el-table-column>
       <el-table-column label="抵扣金额" align="center" prop="actualValue" width="100">
         <template slot-scope="scope">
-          <span>{{ (scope.row.actualValue / 100).toFixed(2) }}元</span>
+          <span>{{ (scope.row.actualValue / 1).toFixed(2) }}元</span>
         </template>
       </el-table-column>
+      <!-- 修改：普通券生效时间显示为- -->
       <el-table-column label="生效时间" align="center" prop="beginTime" width="160">
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.beginTime, '{y}-{m}-{d} {h}:{i}') }}</span>
+          <span v-if="scope.row.type === 1">
+            {{ parseTime(scope.row.beginTime, '{y}-{m}-{d} {h}:{i}') }}
+          </span>
+          <span v-else>-</span>
         </template>
       </el-table-column>
+      <!-- 修改：普通券失效时间显示为- -->
       <el-table-column label="失效时间" align="center" prop="endTime" width="160">
         <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.endTime, '{y}-{m}-{d} {h}:{i}') }}</span>
+          <span v-if="scope.row.type === 1">
+            {{ parseTime(scope.row.endTime, '{y}-{m}-{d} {h}:{i}') }}
+          </span>
+          <span v-else>-</span>
         </template>
       </el-table-column>
       <el-table-column label="优惠券状态" align="center" prop="status" width="100">
@@ -261,7 +269,8 @@
             </el-form-item>
           </el-col>
         </el-row>
-        <el-row>
+        <!-- 修改：仅秒杀券显示生效/失效时间 -->
+        <el-row v-if="form.type === 1">
           <el-col :span="12">
             <el-form-item label="生效时间" prop="beginTime">
               <el-date-picker
@@ -332,11 +341,19 @@
         <el-descriptions-item label="库存" v-if="viewForm.type === 1">
           {{ viewForm.stock || 0 }}
         </el-descriptions-item>
+        <!-- 修改：详情弹窗普通券生效时间显示为- -->
         <el-descriptions-item label="生效时间">
-          {{ parseTime(viewForm.beginTime, '{y}-{m}-{d} {h}:{i}:{s}') }}
+          <span v-if="viewForm.type === 1">
+            {{ parseTime(viewForm.beginTime, '{y}-{m}-{d} {h}:{i}:{s}') }}
+          </span>
+          <span v-else>-</span>
         </el-descriptions-item>
+        <!-- 修改：详情弹窗普通券失效时间显示为- -->
         <el-descriptions-item label="失效时间">
-          {{ parseTime(viewForm.endTime, '{y}-{m}-{d} {h}:{i}:{s}') }}
+          <span v-if="viewForm.type === 1">
+            {{ parseTime(viewForm.endTime, '{y}-{m}-{d} {h}:{i}:{s}') }}
+          </span>
+          <span v-else>-</span>
         </el-descriptions-item>
         <el-descriptions-item label="优惠券状态">
           <el-tag :type="viewForm.status === 1 ? 'success' : (viewForm.status === 2 ? 'info' : 'warning')">
@@ -364,8 +381,13 @@ import { listShop,  shopList} from "@/api/shop/shop"
 export default {
   name: "Voucher",
   data() {
-    // 验证结束时间必须大于开始时间
+    // 验证结束时间必须大于开始时间（仅秒杀券生效）
     const validateEndTime = (rule, value, callback) => {
+      // 普通券直接通过校验
+      if (this.form.type === 0) {
+        callback()
+        return
+      }
       if (!value) {
         callback(new Error('请选择失效时间'))
       } else if (this.form.beginTime && new Date(value) <= new Date(this.form.beginTime)) {
@@ -375,8 +397,13 @@ export default {
       }
     }
 
-    // 验证开始时间必须小于结束时间
+    // 验证开始时间必须小于结束时间（仅秒杀券生效）
     const validateBeginTime = (rule, value, callback) => {
+      // 普通券直接通过校验
+      if (this.form.type === 0) {
+        callback()
+        return
+      }
       if (!value) {
         callback(new Error('请选择生效时间'))
       } else if (this.form.endTime && new Date(value) >= new Date(this.form.endTime)) {
@@ -473,10 +500,10 @@ export default {
           { required: true, message: "请选择优惠券状态", trigger: "change" }
         ],
         beginTime: [
-          { required: true, validator: validateBeginTime, trigger: 'change' }
+          { validator: validateBeginTime, trigger: 'change' } // 移除required，改为动态校验
         ],
         endTime: [
-          { required: true, validator: validateEndTime, trigger: 'change' }
+          { validator: validateEndTime, trigger: 'change' } // 移除required，改为动态校验
         ],
         stock: [
           { required: true, message: "库存不能为空", trigger: "blur" },
@@ -534,8 +561,8 @@ export default {
         type: 0,
         status: 1,
         stock: null,
-        beginTime: null,
-        endTime: null
+        beginTime: null, // 重置时清空时间
+        endTime: null    // 重置时清空时间
       }
       this.resetForm("form")
     },
@@ -576,8 +603,8 @@ export default {
           type: Number(response.data.type), // 确保类型是数字
           status: Number(response.data.status), // 确保状态是数字
           stock: response.data.stock,
-          beginTime: response.data.beginTime,
-          endTime: response.data.endTime
+          beginTime: response.data.type === 1 ? response.data.beginTime : null, // 普通券清空时间
+          endTime: response.data.type === 1 ? response.data.endTime : null     // 普通券清空时间
         }
         this.open = true
         this.title = "修改优惠券"
@@ -598,9 +625,11 @@ export default {
     },
     /** 优惠券类型变化事件 */
     handleTypeChange(type) {
-      // 如果是普通券，清空库存
+      // 如果是普通券，清空库存和时间
       if (type === 0) {
         this.form.stock = null
+        this.form.beginTime = null
+        this.form.endTime = null
       }
     },
     /** 提交按钮 */
@@ -609,14 +638,14 @@ export default {
         if (valid) {
           // 将金额从元转换为分
           const formData = {
-            ...this.form,
-            payValue: Math.round(this.form.payValue * 100),
-            actualValue: Math.round(this.form.actualValue * 100)
+            ...this.form
           }
 
-          // 如果是普通券，不传库存字段
+          // 如果是普通券，删除库存、生效时间、失效时间字段
           if (formData.type === 0) {
             delete formData.stock
+            delete formData.beginTime
+            delete formData.endTime
           }
 
           if (this.form.id != null) {

@@ -25,6 +25,23 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
+      <!-- 新增：店铺类型搜索条件 -->
+      <el-form-item label="店铺类型" prop="typeId">
+        <el-select
+          v-model="queryParams.typeId"
+          placeholder="请选择店铺类型"
+          clearable
+          @change="handleQuery"
+          style="width: 180px"
+        >
+          <el-option
+            v-for="type in shopTypeList"
+            :key="type.id"
+            :label="type.name"
+            :value="type.id"
+          />
+        </el-select>
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
         <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
@@ -108,27 +125,15 @@
 
     <el-table v-loading="loading" :data="shopList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="商铺图片" align="center" width="100">
-        <template slot-scope="scope">
-          <el-image
-            v-if="getFirstImage(scope.row.images)"
-            :src="getFirstImage(scope.row.images)"
-            :preview-src-list="getImageList(scope.row.images)"
-            fit="cover"
-            style="width: 60px; height: 60px; border-radius: 4px;"
-          >
-            <div slot="error" class="image-slot">
-              <i class="el-icon-picture-outline" style="font-size: 20px; color: #ccc;"></i>
-            </div>
-          </el-image>
-          <div v-else class="no-image">
-            <i class="el-icon-picture-outline" style="font-size: 20px; color: #ccc;"></i>
-          </div>
-        </template>
-      </el-table-column>
       <el-table-column label="商铺名称" align="center" prop="name" :show-overflow-tooltip="true" />
       <el-table-column label="地址" align="center" prop="address" :show-overflow-tooltip="true" />
       <el-table-column label="商圈" align="center" prop="area" />
+      <!-- 新增：店铺类型列（显示名称而非ID） -->
+      <el-table-column label="店铺类型" align="center" prop="typeId">
+        <template slot-scope="scope">
+          <span>{{ getShopTypeName(scope.row.typeId) || '-' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="均价" align="center" prop="avgPrice">
         <template slot-scope="scope">
           <span v-if="scope.row.avgPrice">¥{{ scope.row.avgPrice }}</span>
@@ -188,12 +193,30 @@
           </el-col>
         </el-row>
         <el-row>
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="商圈" prop="area">
               <el-input v-model="form.area" placeholder="请输入商圈" maxlength="20" />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="8">
+            <!-- 新增：店铺类型表单项 -->
+            <el-form-item label="店铺类型" prop="typeId">
+              <el-select
+                v-model="form.typeId"
+                placeholder="请选择店铺类型"
+                clearable
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="type in shopTypeList"
+                  :key="type.id"
+                  :label="type.name"
+                  :value="type.id"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
             <el-form-item label="营业时间" prop="openHours">
               <el-input v-model="form.openHours" placeholder="例如：10:00-22:00" maxlength="20" />
             </el-form-item>
@@ -228,47 +251,7 @@
         <el-row>
           <el-col :span="24">
             <el-form-item label="商铺图片">
-              <el-upload
-                action="#"
-                list-type="picture-card"
-                :file-list="fileList"
-                :before-upload="beforeUpload"
-                :on-remove="handleRemove"
-                :on-change="handleChange"
-                :auto-upload="false"
-                :multiple="true"
-                :limit="10"
-                accept=".jpg,.jpeg,.png,.gif"
-                class="image-uploader"
-              >
-                <i class="el-icon-plus"></i>
-                <div slot="file" slot-scope="{ file }">
-                  <img class="el-upload-list__item-thumbnail" :src="file.url" alt="" />
-                  <span class="el-upload-list__item-actions">
-                    <span
-                      class="el-upload-list__item-preview"
-                      @click="handlePictureCardPreview(file)"
-                    >
-                      <i class="el-icon-zoom-in"></i>
-                    </span>
-                    <span
-                      class="el-upload-list__item-delete"
-                      @click="handleRemove(file)"
-                    >
-                      <i class="el-icon-delete"></i>
-                    </span>
-                  </span>
-                </div>
-              </el-upload>
-
-              <el-dialog :visible.sync="dialogVisible" append-to-body>
-                <img width="100%" :src="dialogImageUrl" alt="" />
-              </el-dialog>
-
-              <div class="el-form-item__tip">
-                支持jpg、png、gif格式，最多上传10张图片，单张图片不超过5MB
-              </div>
-              <el-input v-model="form.images" type="hidden" />
+              <imageUpload v-model="form.images" :fileSize="2" :limit="1"  />
             </el-form-item>
           </el-col>
         </el-row>
@@ -379,6 +362,8 @@
       <el-descriptions :column="2" border>
         <el-descriptions-item label="商铺名称">{{ detailForm.name || '-' }}</el-descriptions-item>
         <el-descriptions-item label="商圈">{{ detailForm.area || '-' }}</el-descriptions-item>
+        <!-- 新增：详情显示店铺类型 -->
+        <el-descriptions-item label="店铺类型">{{ getShopTypeName(detailForm.typeId) || '-' }}</el-descriptions-item>
         <el-descriptions-item label="营业时间">{{ detailForm.openHours || '-' }}</el-descriptions-item>
         <el-descriptions-item label="地址" :span="2">{{ detailForm.address || '-' }}</el-descriptions-item>
         <el-descriptions-item label="均价">
@@ -418,6 +403,8 @@
 
 <script>
 import {listShop, getShop, delShop, addShop, updateShop, flushCache, allPublish, publish} from "@/api/shop/shop"
+// 新增：导入店铺类型列表接口（需后端提供）
+import { listShopType } from "@/api/shop/shopType"
 
 // 简化版地图加载函数
 function loadMapScript() {
@@ -480,11 +467,14 @@ export default {
       // 详情表单
       detailForm: {},
 
+      // 新增：店铺类型列表（下拉框数据源）
+      shopTypeList: [],
+
       // 图片上传相关
       fileList: [],
       dialogImageUrl: "",
       dialogVisible: false,
-
+      filePrefix: process.env.VUE_FILE_PREFIX,
       // 地图相关数据
       map: null,
       marker: null,
@@ -501,17 +491,34 @@ export default {
       searchLoading: false,
       locationError: '',
 
-      // 查询参数
+      // 查询参数：新增typeId
       queryParams: {
         pageNum: 1,
         pageSize: 10,
         name: null,
         address: null,
         openHours: null,
+        typeId: null // 店铺类型ID
       },
-      // 表单参数
-      form: {},
-      // 表单校验
+      // 表单参数：新增typeId
+      form: {
+        id: null,
+        name: null,
+        typeId: null, // 店铺类型ID
+        images: null,
+        area: null,
+        address: null,
+        x: null,
+        y: null,
+        avgPrice: null,
+        sold: null,
+        comments: null,
+        score: null,
+        openHours: null,
+        createTime: null,
+        updateTime: null
+      },
+      // 表单校验：新增typeId校验
       rules: {
         name: [
           { required: true, message: "商铺名称不能为空", trigger: "blur" },
@@ -525,6 +532,9 @@ export default {
         ],
         openHours: [
           { required: true, message: "营业时间不能为空", trigger: "blur" }
+        ],
+        typeId: [ // 店铺类型必填校验
+          { required: true, message: "店铺类型不能为空", trigger: "change" }
         ],
         x: [
           { required: true, message: "请选择店铺位置", trigger: "blur" }
@@ -543,6 +553,7 @@ export default {
   },
   created() {
     this.getList()
+    this.getShopTypeList() // 初始化加载店铺类型列表
   },
   mounted() {
     this.initMap()
@@ -560,11 +571,29 @@ export default {
       })
     },
 
+    /** 新增：加载店铺类型列表（下拉框数据源） */
+    getShopTypeList() {
+      listShopType().then(response => {
+        this.shopTypeList = response.data || [] // 适配后端返回格式
+      }).catch(error => {
+        console.error('加载店铺类型失败:', error)
+        this.$message.error('加载店铺类型失败，请刷新页面')
+      })
+    },
+
+    /** 新增：根据typeId获取店铺类型名称 */
+    getShopTypeName(typeId) {
+      if (!typeId) return ''
+      const type = this.shopTypeList.find(item => item.id === typeId)
+      return type ? type.name : '未知类型'
+    },
+
     /** 获取第一张图片 */
     getFirstImage(images) {
       if (!images) return ''
       const imageList = images.split(',').filter(img => img.trim())
-      return imageList[0] || ''
+      console.log(imageList)
+      return 'http://192.168.182.20:9000/smart-live'+imageList[0] || ''
     },
 
     /** 获取图片列表 */
@@ -870,7 +899,7 @@ export default {
       this.form = {
         id: null,
         name: null,
-        typeId: null,
+        typeId: null, // 重置店铺类型
         images: null,
         area: null,
         address: null,
@@ -913,6 +942,8 @@ export default {
     /** 重置按钮操作 */
     resetQuery() {
       this.resetForm("queryForm")
+      // 重置后清空typeId
+      this.queryParams.typeId = null
       this.handleQuery()
     },
 
@@ -969,6 +1000,13 @@ export default {
     /** 提交按钮 */
     submitForm() {
       this.$refs["form"].validate(valid => {
+        this.form.images = this.form.images
+          .split(',')
+          .map(url => {
+            const index = url.indexOf(this.filePrefix);
+            return index !== -1 ? url.substring(index + this.filePrefix.length) : url;
+          })
+          .join(',');
         if (valid) {
           if (this.form.id != null) {
             updateShop(this.form).then(response => {
