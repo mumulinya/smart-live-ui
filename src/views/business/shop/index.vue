@@ -1,31 +1,6 @@
 <template>
   <div class="app-container">
     <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
-      <el-form-item label="商铺名称" prop="name">
-        <el-input
-          v-model="queryParams.name"
-          placeholder="请输入商铺名称"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="地址" prop="address">
-        <el-input
-          v-model="queryParams.address"
-          placeholder="请输入地址"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="营业时间" prop="openHours">
-        <el-input
-          v-model="queryParams.openHours"
-          placeholder="请输入营业时间"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
-      <!-- 新增：店铺类型搜索条件 -->
       <el-form-item label="店铺类型" prop="typeId">
         <el-select
           v-model="queryParams.typeId"
@@ -41,6 +16,23 @@
             :value="type.id"
           />
         </el-select>
+      </el-form-item>
+
+      <el-form-item label="商铺名称" prop="name">
+        <el-input
+          v-model="queryParams.name"
+          placeholder="请输入商铺名称"
+          clearable
+          @keyup.enter.native="handleQuery"
+        />
+      </el-form-item>
+      <el-form-item label="地址" prop="address">
+        <el-input
+          v-model="queryParams.address"
+          placeholder="请输入地址"
+          clearable
+          @keyup.enter.native="handleQuery"
+        />
       </el-form-item>
       <el-form-item>
         <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
@@ -125,15 +117,14 @@
 
     <el-table v-loading="loading" :data="shopList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="商铺名称" align="center" prop="name" :show-overflow-tooltip="true" />
-      <el-table-column label="地址" align="center" prop="address" :show-overflow-tooltip="true" />
-      <el-table-column label="商圈" align="center" prop="area" />
-      <!-- 新增：店铺类型列（显示名称而非ID） -->
       <el-table-column label="店铺类型" align="center" prop="typeId">
         <template slot-scope="scope">
           <span>{{ getShopTypeName(scope.row.typeId) || '-' }}</span>
         </template>
       </el-table-column>
+      <el-table-column label="商铺名称" align="center" prop="name" :show-overflow-tooltip="true" />
+      <el-table-column label="地址" align="center" prop="address" :show-overflow-tooltip="true" />
+      <el-table-column label="商圈" align="center" prop="area" />
       <el-table-column label="均价" align="center" prop="avgPrice">
         <template slot-scope="scope">
           <span v-if="scope.row.avgPrice">¥{{ scope.row.avgPrice }}</span>

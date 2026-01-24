@@ -135,8 +135,8 @@
           <span>{{ (scope.row.actualValue / 1).toFixed(2) }}元</span>
         </template>
       </el-table-column>
-      <!-- 修改：普通券生效时间显示为- -->
-      <el-table-column label="生效时间" align="center" prop="beginTime" width="160">
+      <!-- 秒杀券开始时间 -->
+      <el-table-column label="开始时间" align="center" prop="beginTime" width="160">
         <template slot-scope="scope">
           <span v-if="scope.row.type === 1">
             {{ parseTime(scope.row.beginTime, '{y}-{m}-{d} {h}:{i}') }}
@@ -144,11 +144,29 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <!-- 修改：普通券失效时间显示为- -->
-      <el-table-column label="失效时间" align="center" prop="endTime" width="160">
+      <!-- 秒杀券结束时间 -->
+      <el-table-column label="结束时间" align="center" prop="endTime" width="160">
         <template slot-scope="scope">
           <span v-if="scope.row.type === 1">
             {{ parseTime(scope.row.endTime, '{y}-{m}-{d} {h}:{i}') }}
+          </span>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="有效期类型" align="center" prop="validityType" width="110">
+        <template slot-scope="scope">
+          <el-tag :type="scope.row.validityType === 1 ? 'primary' : 'success'" size="small">
+            {{ scope.row.validityType === 1 ? '固定日期' : '领取后N天' }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="使用有效期" align="center" min-width="180">
+        <template slot-scope="scope">
+          <span v-if="scope.row.validityType === 1">
+            {{ parseTime(scope.row.useStartTime, '{y}-{m}-{d}') }} 至 {{ parseTime(scope.row.useEndTime, '{y}-{m}-{d}') }}
+          </span>
+          <span v-else-if="scope.row.validityType === 2">
+            <el-tag type="success" size="small">领取后{{ scope.row.validDays }}天有效</el-tag>
           </span>
           <span v-else>-</span>
         </template>
@@ -221,7 +239,7 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="优惠券类型" prop="type">
+        <el-form-item label="优惠券类型" prop="type" v-if="!form.id">
           <el-radio-group v-model="form.type" @change="handleTypeChange">
             <el-radio :label="0">普通券</el-radio>
             <el-radio :label="1">秒杀券</el-radio>
@@ -304,18 +322,60 @@
         >
           <el-input-number
             v-model="form.stock"
-            :min="1"
+            :min="0"
             :max="99999"
             style="width: 100%"
             placeholder="请输入库存数量"
           />
         </el-form-item>
-        <el-form-item label="优惠券状态" prop="status" v-if="form.id">
-          <el-radio-group v-model="form.status">
-            <el-radio :label="1">上架</el-radio>
-            <el-radio :label="2">下架</el-radio>
+        
+        <!-- 使用有效期设置 -->
+        <el-divider content-position="left">使用有效期设置</el-divider>
+        <el-form-item label="有效期类型" prop="validityType">
+          <el-radio-group v-model="form.validityType" @change="handleValidityTypeChange">
+            <el-radio :label="1">固定日期</el-radio>
+            <el-radio :label="2">动态有效期</el-radio>
           </el-radio-group>
         </el-form-item>
+        <!-- 固定日期模式 -->
+        <el-row v-if="form.validityType === 1">
+          <el-col :span="12">
+            <el-form-item label="使用开始时间" prop="useStartTime" :rules="form.validityType === 1 ? rules.useStartTime : []">
+              <el-date-picker
+                v-model="form.useStartTime"
+                type="datetime"
+                placeholder="选择使用开始时间"
+                style="width: 100%"
+                value-format="yyyy-MM-dd HH:mm:ss"
+                :picker-options="useStartTimePickerOptions"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="使用结束时间" prop="useEndTime" :rules="form.validityType === 1 ? rules.useEndTime : []">
+              <el-date-picker
+                v-model="form.useEndTime"
+                type="datetime"
+                placeholder="选择使用结束时间"
+                style="width: 100%"
+                value-format="yyyy-MM-dd HH:mm:ss"
+                :picker-options="useEndTimePickerOptions"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <!-- 动态有效期模式 -->
+        <el-form-item label="有效天数" prop="validDays" v-if="form.validityType === 2" :rules="form.validityType === 2 ? rules.validDays : []">
+          <el-input-number
+            v-model="form.validDays"
+            :min="1"
+            :max="365"
+            style="width: 200px"
+            placeholder="请输入有效天数"
+          />
+          <span class="validity-tip">天（领取后生效）</span>
+        </el-form-item>
+
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button @click="cancel">取 消</el-button>
@@ -336,24 +396,34 @@
         <el-descriptions-item label="优惠券标题">{{ viewForm.title }}</el-descriptions-item>
         <el-descriptions-item label="副标题">{{ viewForm.subTitle || '-' }}</el-descriptions-item>
         <el-descriptions-item label="使用规则">{{ viewForm.rules || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="支付金额">{{ (viewForm.payValue / 100).toFixed(2) }}元</el-descriptions-item>
-        <el-descriptions-item label="抵扣金额">{{ (viewForm.actualValue / 100).toFixed(2) }}元</el-descriptions-item>
+        <el-descriptions-item label="支付金额">{{ viewForm.payValue }}元</el-descriptions-item>
+        <el-descriptions-item label="抵扣金额">{{ viewForm.actualValue }}元</el-descriptions-item>
         <el-descriptions-item label="库存" v-if="viewForm.type === 1">
           {{ viewForm.stock || 0 }}
         </el-descriptions-item>
-        <!-- 修改：详情弹窗普通券生效时间显示为- -->
-        <el-descriptions-item label="生效时间">
-          <span v-if="viewForm.type === 1">
-            {{ parseTime(viewForm.beginTime, '{y}-{m}-{d} {h}:{i}:{s}') }}
-          </span>
-          <span v-else>-</span>
+        <!-- 有效期类型展示 -->
+        <el-descriptions-item label="有效期类型">
+          <el-tag :type="viewForm.validityType === 1 ? 'primary' : 'success'" size="small">
+            {{ viewForm.validityType === 1 ? '固定日期' : '动态有效期' }}
+          </el-tag>
         </el-descriptions-item>
-        <!-- 修改：详情弹窗普通券失效时间显示为- -->
-        <el-descriptions-item label="失效时间">
-          <span v-if="viewForm.type === 1">
-            {{ parseTime(viewForm.endTime, '{y}-{m}-{d} {h}:{i}:{s}') }}
-          </span>
-          <span v-else>-</span>
+        <!-- 固定日期模式显示使用时间 -->
+        <el-descriptions-item label="使用开始时间" v-if="viewForm.validityType === 1">
+          {{ parseTime(viewForm.useStartTime, '{y}-{m}-{d} {h}:{i}:{s}') || '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="使用结束时间" v-if="viewForm.validityType === 1">
+          {{ parseTime(viewForm.useEndTime, '{y}-{m}-{d} {h}:{i}:{s}') || '-' }}
+        </el-descriptions-item>
+        <!-- 动态有效期模式显示天数 -->
+        <el-descriptions-item label="有效天数" v-if="viewForm.validityType === 2">
+          <span>领取后 <strong>{{ viewForm.validDays }}</strong> 天有效</span>
+        </el-descriptions-item>
+        <!-- 秒杀券抢购时间 -->
+        <el-descriptions-item label="抢购开始时间" v-if="viewForm.type === 1">
+          {{ parseTime(viewForm.beginTime, '{y}-{m}-{d} {h}:{i}:{s}') || '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="抢购结束时间" v-if="viewForm.type === 1">
+          {{ parseTime(viewForm.endTime, '{y}-{m}-{d} {h}:{i}:{s}') || '-' }}
         </el-descriptions-item>
         <el-descriptions-item label="优惠券状态">
           <el-tag :type="viewForm.status === 1 ? 'success' : (viewForm.status === 2 ? 'info' : 'warning')">
@@ -375,7 +445,7 @@
 </template>
 
 <script>
-import { listVoucher, getVoucher, delVoucher, addVoucher, updateVoucher, changeVoucherStatus,allPublish,publish } from "@/api/marketing/voucher"
+import { listVoucher, getVoucher, delVoucher, addVoucher, updateVoucher, changeVoucherStatus, allPublish, publish, addStock, priceReduced } from "@/api/marketing/voucher"
 import { listShop,  shopList} from "@/api/shop/shop"
 
 export default {
@@ -448,8 +518,16 @@ export default {
       form: {
         type: 0,
         status: 1,
-        stock: null
+        stock: null,
+        validityType: 1, // 有效期类型：1-固定日期，2-动态有效期
+        useStartTime: null,
+        useEndTime: null,
+        validDays: null
       },
+      // 原始库存（用于检测库存增加）
+      originalStock: null,
+      // 原始支付金额（用于检测价格降低）
+      originalPayValue: null,
       // 详情表单参数
       viewForm: {},
       // 开始时间选择器配置
@@ -466,6 +544,24 @@ export default {
         disabledDate: (time) => {
           if (this.form.beginTime) {
             return time.getTime() < new Date(this.form.beginTime).getTime()
+          }
+          return false
+        }
+      },
+      // 使用开始时间选择器配置
+      useStartTimePickerOptions: {
+        disabledDate: (time) => {
+          if (this.form.useEndTime) {
+            return time.getTime() > new Date(this.form.useEndTime).getTime()
+          }
+          return false
+        }
+      },
+      // 使用结束时间选择器配置
+      useEndTimePickerOptions: {
+        disabledDate: (time) => {
+          if (this.form.useStartTime) {
+            return time.getTime() < new Date(this.form.useStartTime).getTime()
           }
           return false
         }
@@ -507,7 +603,20 @@ export default {
         ],
         stock: [
           { required: true, message: "库存不能为空", trigger: "blur" },
-          { type: 'number', min: 1, message: "库存必须大于0", trigger: "blur" }
+          { type: 'number', min: 0, message: "库存不能为负数", trigger: "blur" }
+        ],
+        validityType: [
+          { required: true, message: "请选择有效期类型", trigger: "change" }
+        ],
+        useStartTime: [
+          { required: true, message: "请选择使用开始时间", trigger: "change" }
+        ],
+        useEndTime: [
+          { required: true, message: "请选择使用结束时间", trigger: "change" }
+        ],
+        validDays: [
+          { required: true, message: "请输入有效天数", trigger: "blur" },
+          { type: 'number', min: 1, max: 365, message: "有效天数必须在1-365之间", trigger: "blur" }
         ]
       }
     }
@@ -561,8 +670,12 @@ export default {
         type: 0,
         status: 1,
         stock: null,
-        beginTime: null, // 重置时清空时间
-        endTime: null    // 重置时清空时间
+        beginTime: null,
+        endTime: null,
+        validityType: 1, // 默认固定日期
+        useStartTime: null,
+        useEndTime: null,
+        validDays: null
       }
       this.resetForm("form")
     },
@@ -595,17 +708,26 @@ export default {
       this.reset()
       const id = row.id || this.ids
       getVoucher(id).then(response => {
-        // 将金额从分转换为元，并确保类型正确映射
+        // 确保类型正确映射
         this.form = {
           ...response.data,
-          payValue: response.data.payValue / 100,
-          actualValue: response.data.actualValue / 100,
-          type: Number(response.data.type), // 确保类型是数字
-          status: Number(response.data.status), // 确保状态是数字
+          payValue: response.data.payValue,
+          actualValue: response.data.actualValue,
+          type: Number(response.data.type),
+          status: Number(response.data.status),
           stock: response.data.stock,
-          beginTime: response.data.type === 1 ? response.data.beginTime : null, // 普通券清空时间
-          endTime: response.data.type === 1 ? response.data.endTime : null     // 普通券清空时间
+          beginTime: response.data.type === 1 ? response.data.beginTime : null,
+          endTime: response.data.type === 1 ? response.data.endTime : null,
+          // 有效期相关字段
+          validityType: response.data.validityType || 1,
+          useStartTime: response.data.useStartTime,
+          useEndTime: response.data.useEndTime,
+          validDays: response.data.validDays
         }
+        // 记录原始库存，用于检测库存增加
+        this.originalStock = response.data.stock || 0
+        // 记录原始支付金额，用于检测价格降低
+        this.originalPayValue = response.data.payValue || 0
         this.open = true
         this.title = "修改优惠券"
       })
@@ -625,35 +747,85 @@ export default {
     },
     /** 优惠券类型变化事件 */
     handleTypeChange(type) {
-      // 如果是普通券，清空库存和时间
+      // 如果是普通券，清空库存和抢购时间
       if (type === 0) {
         this.form.stock = null
         this.form.beginTime = null
         this.form.endTime = null
       }
     },
+    /** 有效期类型变化事件 */
+    handleValidityTypeChange(validityType) {
+      // 切换有效期类型时清空对应字段并清除验证状态
+      if (validityType === 1) {
+        // 固定日期模式，清空动态有效期天数
+        this.form.validDays = null
+        // 使用$nextTick确保DOM更新后再清除验证
+        this.$nextTick(() => {
+          this.$refs.form && this.$refs.form.clearValidate(['validDays'])
+        })
+      } else if (validityType === 2) {
+        // 动态有效期模式，清空固定日期
+        this.form.useStartTime = null
+        this.form.useEndTime = null
+        // 使用$nextTick确保DOM更新后再清除验证
+        this.$nextTick(() => {
+          this.$refs.form && this.$refs.form.clearValidate(['useStartTime', 'useEndTime'])
+        })
+      }
+    },
     /** 提交按钮 */
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
-          // 将金额从元转换为分
           const formData = {
             ...this.form
           }
 
-          // 如果是普通券，删除库存、生效时间、失效时间字段
+          // 如果是普通券，删除库存、抢购时间字段
           if (formData.type === 0) {
             delete formData.stock
             delete formData.beginTime
             delete formData.endTime
           }
+          
+          // 根据有效期类型处理字段
+          if (formData.validityType === 1) {
+            // 固定日期模式，清空动态有效期天数
+            delete formData.validDays
+          } else if (formData.validityType === 2) {
+            // 动态有效期模式，清空固定日期
+            delete formData.useStartTime
+            delete formData.useEndTime
+          }
 
           if (this.form.id != null) {
-            updateVoucher(formData).then(response => {
+            // 修改操作
+            const currentStock = this.form.stock || 0
+            const stockDiff = currentStock - this.originalStock
+            const currentPayValue = this.form.payValue || 0
+            const isPriceReduced = currentPayValue < this.originalPayValue
+            
+            // 先更新优惠券数据
+            updateVoucher(formData).then(() => {
+              const promises = []
+              
+              // 如果是秒杀券且库存增加了，发送库存增加MQ消息
+              if (this.form.type === 1 && stockDiff > 0) {
+                promises.push(addStock(this.form.id))
+              }
+              
+              // 如果价格降低了，发送价格降低MQ消息
+              if (isPriceReduced) {
+                promises.push(priceReduced(this.form.id))
+              }
+              
+              return Promise.all(promises)
+            }).then(() => {
               this.$modal.msgSuccess("修改成功")
               this.open = false
               this.getList()
-            })
+            }).catch(() => {})
           } else {
             addVoucher(formData).then(response => {
               this.$modal.msgSuccess("新增成功")
@@ -679,7 +851,7 @@ export default {
       const newStatus = row.status === 1 ? 2 : 1
       const statusText = newStatus === 1 ? '上架' : '下架'
 
-      this.$modal.confirm(`确认要${statusText}优惠券"${row.title}"吗？`).then(function() {
+      this.$modal.confirm(`确认要${statusText}优惠券"${row.title}"吗？`).then(() => {
         return changeVoucherStatus(row.id, newStatus)
       }).then(() => {
         this.$modal.msgSuccess(`${statusText}成功`)
@@ -720,5 +892,17 @@ export default {
 }
 .el-table {
   margin-top: 16px;
+}
+.validity-tip {
+  margin-left: 10px;
+  color: #909399;
+  font-size: 12px;
+}
+.el-divider--horizontal {
+  margin: 20px 0 16px;
+}
+.el-divider__text {
+  color: #606266;
+  font-weight: 500;
 }
 </style>

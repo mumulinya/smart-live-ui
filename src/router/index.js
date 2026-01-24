@@ -87,6 +87,20 @@ export const constantRoutes = [
         meta: { title: '个人中心', icon: 'user' }
       }
     ]
+  },
+  // 审核中心（临时静态路由）
+  {
+    path: '/audit',
+    component: Layout,
+    redirect: '/audit/index',
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/system/audit/index'),
+        name: 'AuditCenter',
+        meta: { title: '内容审核中心', icon: 'eye-open' }
+      }
+    ]
   }
 
 ]
