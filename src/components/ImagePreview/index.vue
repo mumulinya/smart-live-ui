@@ -34,7 +34,24 @@ export default {
         return
       }
       let real_src = this.src.split(",")[0]
-      return real_src
+      if (real_src) {
+          if (real_src.startsWith('http') || real_src.startsWith('https')) {
+              // pass
+          } else {
+              let base = process.env.VUE_APP_FILE_BASE_API || ''
+              if (base.endsWith('/')) base = base.slice(0, -1)
+              
+              let url = real_src
+              if (!url.startsWith('/')) url = '/' + url
+              
+              let fullUrl = base + url
+              if (fullUrl.includes('/smart-live/smart-live')) {
+                  fullUrl = fullUrl.replace('/smart-live/smart-live', '/smart-live')
+              }
+              real_src = fullUrl
+          }
+      }
+      return real_src 
     },
     realSrcList() {
       if (!this.src) {
@@ -43,7 +60,24 @@ export default {
       let real_src_list = this.src.split(",")
       let srcList = []
       real_src_list.forEach(item => {
-        return srcList.push(item)
+        if (item.trim()) {
+            let url = item.trim()
+            if (url.startsWith('http') || url.startsWith('https')) {
+               // pass
+            } else {
+               let base = process.env.VUE_APP_FILE_BASE_API || ''
+               if (base.endsWith('/')) base = base.slice(0, -1)
+               
+               if (!url.startsWith('/')) url = '/' + url
+               
+               let fullUrl = base + url
+               if (fullUrl.includes('/smart-live/smart-live')) {
+                   fullUrl = fullUrl.replace('/smart-live/smart-live', '/smart-live')
+               }
+               url = fullUrl
+            }
+            srcList.push(url)
+        }
       })
       return srcList
     },

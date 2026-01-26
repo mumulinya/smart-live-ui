@@ -1,196 +1,202 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
-      <el-form-item label="店铺类型" prop="typeId">
-        <el-select
-          v-model="queryParams.typeId"
-          placeholder="请选择店铺类型"
-          clearable
-          @change="handleQuery"
-          style="width: 180px"
-        >
-          <el-option
-            v-for="type in shopTypeList"
-            :key="type.id"
-            :label="type.name"
-            :value="type.id"
+    <!-- 搜索与操作栏 -->
+    <el-card class="box-card mb-4" shadow="never">
+      <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px" class="search-form">
+        <el-form-item label="店铺类型" prop="typeId">
+          <el-select
+            v-model="queryParams.typeId"
+            placeholder="请选择店铺类型"
+            clearable
+            @change="handleQuery"
+            style="width: 200px"
+          >
+            <el-option
+              v-for="type in shopTypeList"
+              :key="type.id"
+              :label="type.name"
+              :value="type.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="商铺名称" prop="name">
+          <el-input
+            v-model="queryParams.name"
+            placeholder="请输入商铺名称"
+            clearable
+            @keyup.enter.native="handleQuery"
+            style="width: 200px"
           />
-        </el-select>
-      </el-form-item>
+        </el-form-item>
+        <el-form-item label="地址" prop="address">
+          <el-input
+            v-model="queryParams.address"
+            placeholder="请输入地址"
+            clearable
+            @keyup.enter.native="handleQuery"
+            style="width: 200px"
+          />
+        </el-form-item>
+        <el-form-item class="search-btns">
+          <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
+          <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
 
-      <el-form-item label="商铺名称" prop="name">
-        <el-input
-          v-model="queryParams.name"
-          placeholder="请输入商铺名称"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="地址" prop="address">
-        <el-input
-          v-model="queryParams.address"
-          placeholder="请输入地址"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
-
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="el-icon-plus"
-          size="mini"
-          @click="handleAdd"
-          v-hasPermi="['shop:shop:add']"
-        >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="success"
-          plain
-          icon="el-icon-edit"
-          size="mini"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['shop:shop:edit']"
-        >修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="danger"
-          plain
-          icon="el-icon-delete"
-          size="mini"
-          :disabled="multiple"
-          @click="handleDelete"
-          v-hasPermi="['shop:shop:remove']"
-        >删除</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
-          size="mini"
-          @click="handleExport"
-          v-hasPermi="['shop:shop:export']"
-        >导出</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="el-icon-refresh"
-          size="mini"
-          @click="handleFlushCache"
-        >刷新缓存</el-button>
-      </el-col>
-
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="el-icon-s-promotion"
-          size="mini"
-          @click="handleAllPublish"
-        >全量发布</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="success"
-          plain
-          icon="el-icon-s-promotion"
-          size="mini"
-          @click="handlePublish"
-        >发布</el-button>
-      </el-col>
-
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
-
-    <el-table v-loading="loading" :data="shopList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="店铺类型" align="center" prop="typeId">
-        <template slot-scope="scope">
-          <span>{{ getShopTypeName(scope.row.typeId) || '-' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="商铺名称" align="center" prop="name" :show-overflow-tooltip="true" />
-      <el-table-column label="地址" align="center" prop="address" :show-overflow-tooltip="true" />
-      <el-table-column label="商圈" align="center" prop="area" />
-      <el-table-column label="均价" align="center" prop="avgPrice">
-        <template slot-scope="scope">
-          <span v-if="scope.row.avgPrice">¥{{ scope.row.avgPrice }}</span>
-          <span v-else>-</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="销量" align="center" prop="sold" />
-      <el-table-column label="评分" align="center" prop="score">
-        <template slot-scope="scope">
-          <span v-if="scope.row.score">{{ (scope.row.score / 10).toFixed(1) }}分</span>
-          <span v-else>-</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="营业时间" align="center" prop="openHours" width="120" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="220">
-        <template slot-scope="scope">
+      <el-row :gutter="10" class="mb8 op-btns">
+        <el-col :span="1.5">
           <el-button
+            type="primary"
+            plain
+            icon="el-icon-plus"
             size="mini"
-            type="text"
-            icon="el-icon-view"
-            @click="handleDetail(scope.row)"
-          >详情</el-button>
+            @click="handleAdd"
+            v-hasPermi="['shop:shop:add']"
+          >新增店铺</el-button>
+        </el-col>
+        <el-col :span="1.5">
           <el-button
-            size="mini"
-            type="text"
+            type="success"
+            plain
             icon="el-icon-edit"
-            @click="handleUpdate(scope.row)"
+            size="mini"
+            :disabled="single"
+            @click="handleUpdate"
             v-hasPermi="['shop:shop:edit']"
           >修改</el-button>
+        </el-col>
+        <el-col :span="1.5">
           <el-button
-            size="mini"
-            type="text"
+            type="danger"
+            plain
             icon="el-icon-delete"
-            @click="handleDelete(scope.row)"
+            size="mini"
+            :disabled="multiple"
+            @click="handleDelete"
             v-hasPermi="['shop:shop:remove']"
           >删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+        </el-col>
+        <el-col :span="1.5">
+          <el-button
+            type="warning"
+            plain
+            icon="el-icon-download"
+            size="mini"
+            @click="handleExport"
+            v-hasPermi="['shop:shop:export']"
+          >导出</el-button>
+        </el-col>
+        <div class="right-actions">
+           <el-button
+            type="text"
+            icon="el-icon-refresh"
+            size="mini"
+            @click="handleFlushCache"
+          >刷新缓存</el-button>
+           <el-button
+            type="text"
+            icon="el-icon-s-promotion"
+            size="mini"
+            @click="handleAllPublish"
+          >全量发布</el-button>
+          <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+        </div>
+      </el-row>
+    </el-card>
 
-    <pagination
-      v-show="total>0"
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+    <!-- 表格区域 -->
+    <el-card class="box-card" shadow="never">
+        <el-table v-loading="loading" :data="shopList" @selection-change="handleSelectionChange" border stripe :header-cell-style="{background:'#f5f7fa',color:'#606266'}">
+        <el-table-column type="selection" width="55" align="center" />
+        <el-table-column label="店铺信息" min-width="250">
+            <template slot-scope="scope">
+                <div class="shop-info-cell">
+                    <el-image
+                        class="shop-list-img"
+                        :src="getFirstImage(scope.row.images)"
+                        fit="cover"
+                    >
+                        <div slot="error" class="image-slot">
+                            <i class="el-icon-picture-outline"></i>
+                        </div>
+                    </el-image>
+                    <div class="shop-list-text">
+                        <div class="shop-name">{{ scope.row.name }}</div>
+                        <div class="shop-sub">{{ scope.row.address }}</div>
+                    </div>
+                </div>
+            </template>
+        </el-table-column>
+        <el-table-column label="类型" align="center" prop="typeId" width="120">
+            <template slot-scope="scope">
+            <el-tag size="small" effect="plain">{{ getShopTypeName(scope.row.typeId) || '未分类' }}</el-tag>
+            </template>
+        </el-table-column>
+        <el-table-column label="商圈" align="center" prop="area" width="150" />
+        <el-table-column label="均价" align="center" prop="avgPrice" width="100">
+            <template slot-scope="scope">
+            <span class="price-text" v-if="scope.row.avgPrice">¥{{ scope.row.avgPrice }}</span>
+            <span v-else>-</span>
+            </template>
+        </el-table-column>
+        <el-table-column label="数据概览" align="center" width="180">
+            <template slot-scope="scope">
+                <div class="data-preview">
+                    <span>销量: {{ scope.row.sold || 0 }}</span>
+                    <el-divider direction="vertical"></el-divider>
+                    <span>评分: {{ scope.row.score ? (scope.row.score / 10).toFixed(1) : '-' }}</span>
+                </div>
+            </template>
+        </el-table-column>
+        <el-table-column label="营业时间" align="center" prop="openHours" width="150" />
+        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
+            <template slot-scope="scope">
+            <el-button
+                size="mini"
+                type="text"
+                icon="el-icon-view"
+                @click="handleDetail(scope.row)"
+            >详情</el-button>
+            <el-button
+                size="mini"
+                type="text"
+                icon="el-icon-edit"
+                @click="handleUpdate(scope.row)"
+                v-hasPermi="['shop:shop:edit']"
+            >修改</el-button>
+            <el-button
+                size="mini"
+                type="text"
+                icon="el-icon-delete"
+                class="text-danger"
+                @click="handleDelete(scope.row)"
+                v-hasPermi="['shop:shop:remove']"
+            >删除</el-button>
+            </template>
+        </el-table-column>
+        </el-table>
+
+        <pagination
+        v-show="total>0"
+        :total="total"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
+        @pagination="getList"
+        />
+    </el-card>
 
     <!-- 添加或修改店铺对话框 -->
-    <el-dialog :title="title" :visible.sync="open" width="900px" append-to-body>
-      <el-form ref="form" :model="form" :rules="rules" label-width="100px">
-        <el-row>
-          <el-col :span="24">
+    <el-dialog :title="title" :visible.sync="open" width="900px" append-to-body custom-class="shop-edit-dialog" top="5vh">
+      <el-form ref="form" :model="form" :rules="rules" label-width="100px" class="edit-form">
+        
+        <div class="form-section-title">基础信息</div>
+        <el-row :gutter="20">
+          <el-col :span="12">
             <el-form-item label="商铺名称" prop="name">
               <el-input v-model="form.name" placeholder="请输入商铺名称" maxlength="50" show-word-limit />
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row>
-          <el-col :span="8">
-            <el-form-item label="商圈" prop="area">
-              <el-input v-model="form.area" placeholder="请输入商圈" maxlength="20" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <!-- 新增：店铺类型表单项 -->
+           <el-col :span="12">
             <el-form-item label="店铺类型" prop="typeId">
               <el-select
                 v-model="form.typeId"
@@ -207,25 +213,19 @@
               </el-select>
             </el-form-item>
           </el-col>
+        </el-row>
+        
+        <el-row :gutter="20">
           <el-col :span="8">
-            <el-form-item label="营业时间" prop="openHours">
-              <el-input v-model="form.openHours" placeholder="例如：10:00-22:00" maxlength="20" />
+            <el-form-item label="商圈" prop="area">
+              <el-input v-model="form.area" placeholder="请输入商圈" maxlength="20" />
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row>
-          <el-col :span="24">
-            <el-form-item label="地址" prop="address">
-              <el-input v-model="form.address" placeholder="请输入详细地址" maxlength="100" show-word-limit />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row>
-          <el-col :span="12">
-            <el-form-item label="均价" prop="avgPrice">
+          <el-col :span="8">
+             <el-form-item label="均价" prop="avgPrice">
               <el-input-number
                 v-model="form.avgPrice"
-                placeholder="请输入均价"
+                placeholder="均价"
                 :min="0"
                 :max="10000"
                 :precision="0"
@@ -236,107 +236,65 @@
               </el-input-number>
             </el-form-item>
           </el-col>
-        </el-row>
-
-        <!-- 图片上传部分 -->
-        <el-row>
-          <el-col :span="24">
-            <el-form-item label="商铺图片">
-              <imageUpload v-model="form.images" :fileSize="2" :limit="1"  />
+          <el-col :span="8">
+            <el-form-item label="营业时间" prop="openHours">
+              <el-input v-model="form.openHours" placeholder="例：10:00-22:00" maxlength="20" />
             </el-form-item>
           </el-col>
         </el-row>
 
-        <!-- 简化版地图选点部分 -->
+        <div class="form-section-title">图片素材</div>
         <el-row>
           <el-col :span="24">
-            <el-form-item label="店铺位置" required>
-              <div class="location-selector">
-                <div class="location-search">
+            <el-form-item label="商铺图片" prop="images">
+               <div class="upload-tip">建议上传高清实拍图，第一张将作为封面图展示</div>
+              <imageUpload v-model="form.images" :fileSize="2" :limit="5"  />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <div class="form-section-title">地理位置</div>
+        <el-row>
+          <el-col :span="24">
+             <el-form-item label="详细地址" prop="address">
+              <el-input v-model="form.address" placeholder="请输入详细地址" maxlength="100" show-word-limit />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row>
+          <el-col :span="24">
+            <el-form-item label="地图定位" required>
+              <div class="location-selector is-edit">
+                <div class="location-search-bar">
                   <el-input
                     v-model="locationKeyword"
-                    placeholder="输入地址搜索位置（如：北京市朝阳区）"
+                    placeholder="输入地址搜索 (如：北京市朝阳区)"
                     clearable
                     @clear="handleClearSearch"
                     @keyup.enter.native="handleSearchLocation"
+                    size="small"
                   >
-                    <el-button
-                      slot="append"
-                      icon="el-icon-search"
-                      @click="handleSearchLocation"
-                      :loading="searchLoading"
-                    >搜索</el-button>
+                     <el-button slot="append" icon="el-icon-search" @click="handleSearchLocation" :loading="searchLoading">搜索</el-button>
                   </el-input>
-                  <div class="search-tips">
-                    <span>支持搜索具体地址、地标建筑、商圈名称等</span>
-                  </div>
                 </div>
 
-                <div class="map-container">
+                <div class="map-wrapper">
                   <div id="map-container" class="map"></div>
-                  <div class="map-actions">
-                    <el-button
-                      size="mini"
-                      icon="el-icon-location"
-                      @click="handleLocateMe"
-                      :loading="locating"
-                    >我的位置</el-button>
-                    <el-button
-                      size="mini"
-                      icon="el-icon-aim"
-                      @click="handleConfirmLocation"
-                      type="primary"
-                      :disabled="!form.x || !form.y"
-                    >确认位置</el-button>
+                   <div class="map-tools">
+                    <el-button size="mini" type="default" icon="el-icon-location" circle @click="handleLocateMe" :loading="locating" title="定位当前位置"></el-button>
                   </div>
                 </div>
 
-                <div class="location-info">
-                  <el-alert
-                    v-if="selectedLocation.address"
-                    :title="`已选择位置：${selectedLocation.address}`"
-                    type="success"
-                    :closable="false"
-                    show-icon
-                  />
-                  <el-alert
-                    v-else
-                    title="请在地图上点击选择店铺位置，或使用搜索功能"
-                    type="info"
-                    :closable="false"
-                    show-icon
-                  />
-
-                  <el-alert
-                    v-if="locationError"
-                    :title="locationError"
-                    type="warning"
-                    :closable="true"
-                    show-icon
-                    @close="locationError = ''"
-                  />
+                <div class="location-status">
+                   <span v-if="selectedLocation.address" class="seccess-text"><i class="el-icon-location-information"></i> 已选：{{ selectedLocation.address }}</span>
+                   <span v-else class="info-text"><i class="el-icon-warning-outline"></i> 请在地图点击选择位置</span>
                 </div>
-
-                <el-row :gutter="10">
-                  <el-col :span="12">
-                    <el-form-item label="经度" prop="x">
-                      <el-input
-                        v-model="form.x"
-                        placeholder="经度"
-                        readonly
-                      />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="12">
-                    <el-form-item label="纬度" prop="y">
-                      <el-input
-                        v-model="form.y"
-                        placeholder="纬度"
-                        readonly
-                      />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
+                
+                 <!-- 隐藏的经纬度输入框，用于表单提交 -->
+                 <div style="display:none">
+                    <el-input v-model="form.x" />
+                    <el-input v-model="form.y" />
+                 </div>
               </div>
             </el-form-item>
           </el-col>
@@ -349,45 +307,96 @@
     </el-dialog>
 
     <!-- 店铺详情对话框 -->
-    <el-dialog title="店铺详情" :visible.sync="detailOpen" width="800px" append-to-body>
-      <el-descriptions :column="2" border>
-        <el-descriptions-item label="商铺名称">{{ detailForm.name || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="商圈">{{ detailForm.area || '-' }}</el-descriptions-item>
-        <!-- 新增：详情显示店铺类型 -->
-        <el-descriptions-item label="店铺类型">{{ getShopTypeName(detailForm.typeId) || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="营业时间">{{ detailForm.openHours || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="地址" :span="2">{{ detailForm.address || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="均价">
-          <span v-if="detailForm.avgPrice">¥{{ detailForm.avgPrice }}</span>
-          <span v-else>-</span>
-        </el-descriptions-item>
-        <el-descriptions-item label="销量">{{ detailForm.sold || 0 }}</el-descriptions-item>
-        <el-descriptions-item label="评分">
-          <span v-if="detailForm.score">{{ (detailForm.score / 10).toFixed(1) }}分</span>
-          <span v-else>-</span>
-        </el-descriptions-item>
-        <el-descriptions-item label="评论数量">{{ detailForm.comments || 0 }}</el-descriptions-item>
-        <el-descriptions-item label="经度">{{ detailForm.x || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="纬度">{{ detailForm.y || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="商铺图片" :span="2">
-          <div class="detail-images">
-            <el-image
-              v-for="(image, index) in getImageList(detailForm.images)"
-              :key="index"
-              :src="image"
-              fit="cover"
-              style="width: 100px; height: 100px; margin-right: 10px; border-radius: 4px;"
-              :preview-src-list="getImageList(detailForm.images)"
-            />
-            <span v-if="!detailForm.images || !detailForm.images.trim()">暂无图片</span>
-          </div>
-        </el-descriptions-item>
-        <el-descriptions-item label="创建时间">{{ detailForm.createTime || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="更新时间">{{ detailForm.updateTime || '-' }}</el-descriptions-item>
-      </el-descriptions>
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="detailOpen = false">关 闭</el-button>
-      </div>
+    <el-dialog :visible.sync="detailOpen" width="800px" append-to-body custom-class="shop-detail-dialog" :show-close="true">
+       <div class="shop-detail-content" v-if="detailOpen">
+           <!-- 头部主要信息 -->
+           <div class="detail-header">
+               <div class="detail-cover">
+                    <el-image 
+                        :src="getFirstImage(detailForm.images)" 
+                        fit="cover"
+                        class="cover-img"
+                    >
+                        <div slot="error" class="image-slot">
+                            <i class="el-icon-picture-outline"></i>
+                        </div>
+                    </el-image>
+               </div>
+               <div class="detail-main-info">
+                   <div class="d-title">{{ detailForm.name }}</div>
+                   <div class="d-tags">
+                       <el-tag size="small" type="primary">{{ getShopTypeName(detailForm.typeId) || '未知类型' }}</el-tag>
+                       <el-tag size="small" type="warning" plain>{{ detailForm.area || '暂无商圈' }}</el-tag>
+                   </div>
+                   <div class="d-score">
+                       <el-rate
+                        :value="detailForm.score ? detailForm.score / 10 : 0"
+                        disabled
+                        show-score
+                        text-color="#ff9900"
+                        score-template="{value}分">
+                        </el-rate>
+                   </div>
+                   <div class="d-stats">
+                       <div class="stat-item">
+                           <span class="label">销量</span>
+                           <span class="val">{{ detailForm.sold || 0 }}</span>
+                       </div>
+                       <div class="stat-divider"></div>
+                        <div class="stat-item">
+                           <span class="label">评论</span>
+                           <span class="val">{{ detailForm.comments || 0 }}</span>
+                       </div>
+                       <div class="stat-divider"></div>
+                        <div class="stat-item">
+                           <span class="label">人均</span>
+                           <span class="val price">¥{{ detailForm.avgPrice || '-' }}</span>
+                       </div>
+                   </div>
+               </div>
+           </div>
+            
+           <el-divider></el-divider>
+
+           <!-- 详细属性表格 -->
+           <div class="detail-grid">
+               <div class="grid-item full">
+                   <i class="el-icon-location-outline"></i>
+                   <span class="label">详细地址:</span>
+                   <span class="value">{{ detailForm.address }}</span>
+               </div>
+               <div class="grid-item">
+                   <i class="el-icon-time"></i>
+                   <span class="label">营业时间:</span>
+                   <span class="value">{{ detailForm.openHours }}</span>
+               </div>
+               <div class="grid-item">
+                   <i class="el-icon-date"></i>
+                   <span class="label">入驻时间:</span>
+                   <span class="value">{{ detailForm.createTime }}</span>
+               </div>
+                <div class="grid-item">
+                   <i class="el-icon-map-location"></i>
+                   <span class="label">经纬坐标:</span>
+                   <span class="value">{{ detailForm.x }}, {{ detailForm.y }}</span>
+               </div>
+           </div>
+
+           <!-- 图片展示 -->
+           <div class="detail-gallery mt-4" v-if="detailForm.images">
+               <div class="gallery-title">店铺相册</div>
+               <div class="gallery-list">
+                    <el-image
+                    v-for="(image, index) in getImageList(detailForm.images)"
+                    :key="index"
+                    :src="image"
+                    fit="cover"
+                    class="gallery-img"
+                    :preview-src-list="getImageList(detailForm.images)"
+                    />
+               </div>
+           </div>
+       </div>
     </el-dialog>
   </div>
 </template>
@@ -402,32 +411,21 @@ function loadMapScript() {
   return new Promise((resolve, reject) => {
     if (window.AMap) {
       resolve(window.AMap)
-      return
+    } else {
+        // 简单轮询等待地图加载完成
+        let tries = 0
+        const timer = setInterval(() => {
+            if (window.AMap) {
+                clearInterval(timer)
+                resolve(window.AMap)
+            }
+            tries++
+            if (tries > 20) { // 最多等待 20*200ms = 4秒
+                clearInterval(timer)
+                reject(new Error('地图加载超时'))
+            }
+        }, 200)
     }
-
-    const script = document.createElement('script')
-    // 使用最稳定的配置，只加载基础功能
-    script.src = `https://webapi.amap.com/maps?v=1.4.15&key=60bdbf9b9cf98025c397ee43e8c25871`
-    script.onload = () => {
-      console.log('高德地图基础版加载成功')
-      // 动态加载必要的插件
-      const pluginScript = document.createElement('script')
-      pluginScript.src = 'https://webapi.amap.com/maps?v=1.4.15&key=60bdbf9b9cf98025c397ee43e8c25871&plugin=AMap.Geocoder,AMap.PlaceSearch'
-      pluginScript.onload = () => {
-        console.log('地图插件加载成功')
-        resolve(window.AMap)
-      }
-      pluginScript.onerror = () => {
-        console.log('地图插件加载失败，使用基础功能')
-        resolve(window.AMap) // 即使插件加载失败，也继续使用基础功能
-      }
-      document.head.appendChild(pluginScript)
-    }
-    script.onerror = (error) => {
-      console.error('地图加载失败:', error)
-      reject(new Error('地图加载失败'))
-    }
-    document.head.appendChild(script)
   })
 }
 
@@ -579,18 +577,44 @@ export default {
       return type ? type.name : '未知类型'
     },
 
-    /** 获取第一张图片 */
     getFirstImage(images) {
       if (!images) return ''
       const imageList = images.split(',').filter(img => img.trim())
-      console.log(imageList)
-      return 'http://192.168.182.20:9000/smart-live'+imageList[0] || ''
+      let url = imageList[0] || ''
+      if (url.startsWith('http') || url.startsWith('https')) return url
+      
+      let base = process.env.VUE_APP_FILE_BASE_API || ''
+      // 确保 base 不以 / 结尾
+      if (base.endsWith('/')) base = base.slice(0, -1)
+      // 确保 url 以 / 开头
+      if (!url.startsWith('/')) url = '/' + url
+      
+      let fullUrl = base + url
+      if (fullUrl.includes('/smart-live/smart-live')) {
+          fullUrl = fullUrl.replace('/smart-live/smart-live', '/smart-live')
+      }
+      return fullUrl
     },
 
     /** 获取图片列表 */
     getImageList(images) {
       if (!images) return []
-      return images.split(',').filter(img => img.trim())
+      const baseRaw = process.env.VUE_APP_FILE_BASE_API || ''
+      // 确保 base 不以 / 结尾
+      const base = baseRaw.endsWith('/') ? baseRaw.slice(0, -1) : baseRaw
+      
+      return images.split(',').filter(img => img.trim()).map(img => {
+          if (img.startsWith('http') || img.startsWith('https')) return img
+          
+          let url = img
+          if (!url.startsWith('/')) url = '/' + url
+          
+          let fullUrl = base + url
+          if (fullUrl.includes('/smart-live/smart-live')) {
+             return fullUrl.replace('/smart-live/smart-live', '/smart-live')
+          }
+          return fullUrl
+      })
     },
 
     /** 图片上传前校验 */
@@ -747,6 +771,7 @@ export default {
         }
         this.form.x = lng
         this.form.y = lat
+        this.form.address = this.selectedLocation.address
         return
       }
 
@@ -761,9 +786,7 @@ export default {
           this.form.x = lng
           this.form.y = lat
           // 自动填充地址字段
-          if (!this.form.address) {
-            this.form.address = address
-          }
+          this.form.address = address
         } else {
           this.selectedLocation = {
             address: `位置 (${lng.toFixed(6)}, ${lat.toFixed(6)})`,
@@ -772,6 +795,7 @@ export default {
           }
           this.form.x = lng
           this.form.y = lat
+          this.form.address = this.selectedLocation.address
         }
       })
     },
@@ -814,8 +838,15 @@ export default {
 
           this.$message.success('位置搜索成功')
         } else {
-          this.locationError = '未找到相关地点，请尝试其他关键词'
-          this.$message.error('未找到相关地点')
+          console.error('地图搜索失败:', status, result)
+          let errorMsg = '未找到相关地点，请尝试其他关键词'
+          if (status === 'error') {
+             errorMsg = '搜索出错：' + (result.info || status)
+          } else if (status === 'no_data') {
+             errorMsg = '未找到结果，请更换关键词'
+          }
+          this.locationError = errorMsg
+          this.$message.error(errorMsg)
         }
       })
     },
@@ -875,6 +906,9 @@ export default {
       if (!this.form.x || !this.form.y) {
         this.$message.warning('请先选择位置')
         return
+      }
+      if (this.selectedLocation && this.selectedLocation.address) {
+        this.form.address = this.selectedLocation.address
       }
       this.$message.success('位置已确认')
     },
@@ -1059,98 +1093,276 @@ export default {
 }
 </script>
 
-<style scoped>
-.el-form-item__tip {
-  font-size: 12px;
-  color: #909399;
-  margin-top: 4px;
+<style scoped lang="scss">
+.app-container {
+    padding: 20px;
+    background-color: #f0f2f5;
+    min-height: 100vh;
 }
 
-.image-uploader {
-  width: 100%;
+.box-card {
+    border-radius: 8px;
+    border: none;
+    .el-card__body {
+        padding: 20px;
+    }
 }
 
-.image-uploader ::v-deep .el-upload--picture-card {
-  width: 100px;
-  height: 100px;
-  line-height: 100px;
+.mb-4 {
+    margin-bottom: 20px;
+}
+.mt-4 {
+    margin-top: 20px;
 }
 
-.image-uploader ::v-deep .el-upload-list--picture-card .el-upload-list__item {
-  width: 100px;
-  height: 100px;
+/* 搜索栏优化 */
+.search-form {
+    .el-form-item {
+        margin-bottom: 10px;
+        margin-right: 20px;
+    }
+}
+.search-btns {
+    margin-left: 10px;
 }
 
-.no-image {
-  width: 60px;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px dashed #dcdfe6;
-  border-radius: 4px;
-  background-color: #f5f7fa;
+.op-btns {
+    margin-top: 15px;
+    display: flex;
+    align-items: center;
+    .right-actions {
+        margin-left: auto;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
 }
 
-/* 搜索相关样式 */
-.search-tips {
-  font-size: 12px;
-  color: #909399;
-  margin-top: 5px;
+/* 表格优化 */
+.shop-info-cell {
+    display: flex;
+    align-items: center;
+    padding: 5px 0;
+    .shop-list-img {
+        width: 48px;
+        height: 48px;
+        border-radius: 6px;
+        border: 1px solid #eee;
+        margin-right: 12px;
+        flex-shrink: 0;
+    }
+    .shop-list-text {
+        overflow: hidden;
+        .shop-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .shop-sub {
+            font-size: 12px;
+            color: #999;
+             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    }
 }
 
-.location-selector {
-  width: 100%;
+.price-text {
+    font-weight: 600;
+    color: #f56c6c;
 }
 
-.location-search {
-  margin-bottom: 15px;
+.data-preview {
+    font-size: 12px;
+    color: #606266;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.map-container {
-  position: relative;
-  height: 300px;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-  margin-bottom: 15px;
+.text-danger {
+    color: #f56c6c;
 }
 
-.map {
-  width: 100%;
-  height: 100%;
+/* 编辑弹窗优化 */
+.form-section-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #303133;
+    padding-left: 10px;
+    border-left: 4px solid #409EFF;
+    margin-bottom: 20px;
+    margin-top: 10px;
 }
 
-.map-actions {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 1000;
-}
-
-.location-info {
-  margin-bottom: 15px;
-}
-
-.detail-images {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-@media (max-width: 768px) {
-  .map-container {
-    height: 250px;
-  }
-
-  .map-actions {
-    position: relative;
-    top: 0;
-    right: 0;
+.upload-tip {
+    font-size: 12px;
+    color: #909399;
     margin-bottom: 10px;
-  }
+}
 
-  .map-actions .el-button {
-    margin-bottom: 5px;
-  }
+/* 详情弹窗优化 */
+.shop-detail-content {
+    padding: 0 10px;
+}
+
+.detail-header {
+    display: flex;
+    .detail-cover {
+        width: 120px;
+        height: 120px;
+        flex-shrink: 0;
+        margin-right: 20px;
+        .cover-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+        }
+    }
+    .detail-main-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        .d-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #303133;
+        }
+        .d-tags {
+            margin: 8px 0;
+            display: flex;
+            gap: 8px;
+        }
+        .d-stats {
+            display: flex;
+            align-items: center;
+            background: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 6px;
+            width: fit-content;
+            
+            .stat-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                min-width: 60px;
+                .label {
+                    font-size: 12px;
+                    color: #909399;
+                }
+                .val {
+                    font-size: 16px;
+                    font-weight: 600;
+                    color: #303133;
+                    margin-top: 4px;
+                    &.price {
+                        color: #f56c6c;
+                    }
+                }
+            }
+            .stat-divider {
+                width: 1px;
+                height: 20px;
+                background: #dcdfe6;
+                margin: 0 15px;
+            }
+        }
+    }
+}
+
+.detail-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    .grid-item {
+        width: calc(50% - 15px);
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        background: #f5f7fa;
+        border-radius: 4px;
+         &.full {
+            width: 100%;
+        }
+        i {
+            margin-right: 8px;
+            color: #909399;
+            font-size: 16px;
+        }
+        .label {
+            color: #606266;
+            margin-right: 10px;
+            min-width: 70px;
+        }
+        .value {
+            color: #303133;
+            font-weight: 500;
+        }
+    }
+}
+
+.detail-gallery {
+    .gallery-title {
+        font-size: 15px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: #303133;
+    }
+    .gallery-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        .gallery-img {
+            width: 100px;
+            height: 100px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            &:hover {
+                transform: scale(1.02);
+            }
+        }
+    }
+}
+
+/* 地图相关样式优化 */
+.location-selector.is-edit {
+    .map-wrapper {
+        position: relative;
+        height: 300px;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid #dcdfe6;
+        .map {
+            width: 100%;
+            height: 100%;
+        }
+        .map-tools {
+             position: absolute;
+             bottom: 20px;
+             right: 20px;
+             z-index: 999;
+        }
+    }
+    .location-search-bar {
+        margin-bottom: 12px;
+    }
+    .location-status {
+        margin-top: 10px;
+        font-size: 13px;
+        .seccess-text {
+            color: #67c23a;
+        }
+        .info-text {
+            color: #909399;
+        }
+    }
 }
 </style>

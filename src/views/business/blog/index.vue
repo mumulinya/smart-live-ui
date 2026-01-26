@@ -1,234 +1,252 @@
 <template>
   <div class="app-container">
-    <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px">
-      <el-form-item label="店铺类型" prop="typeId">
-        <el-select
-          v-model="queryParams.typeId"
-          placeholder="请选择店铺类型"
-          clearable
-          style="width: 200px"
-        >
-          <el-option
-            v-for="type in shopTypeList"
-            :key="type.id"
-            :label="type.name"
-            :value="type.id"
-          />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="店铺" prop="shopId">
-        <el-select
-          v-model="queryParams.shopId"
-          placeholder="请选择店铺"
-          clearable
-          filterable
-          style="width: 200px"
-        >
-          <el-option
-            v-for="shop in shopList"
-            :key="shop.id"
-            :label="shop.name"
-            :value="shop.id"
-          />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="用户" prop="userId">
-        <el-select
-          v-model="queryParams.userId"
-          placeholder="请选择用户"
-          clearable
-          filterable
-          style="width: 200px"
-        >
-          <el-option
-            v-for="user in userList"
-            :key="user.id"
-            :label="user.nickName"
-            :value="user.id"
-          />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="标题" prop="title">
-        <el-input
-          v-model="queryParams.title"
-          placeholder="请输入标题"
-          clearable
-          @keyup.enter.native="handleQuery"
-          style="width: 200px"
-        />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
-      </el-form-item>
-    </el-form>
-
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="el-icon-plus"
-          size="mini"
-          @click="handleAdd"
-          v-hasPermi="['blog:blog:add']"
-        >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="success"
-          plain
-          icon="el-icon-edit"
-          size="mini"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['blog:blog:edit']"
-        >修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="danger"
-          plain
-          icon="el-icon-delete"
-          size="mini"
-          :disabled="multiple"
-          @click="handleDelete"
-          v-hasPermi="['blog:blog:remove']"
-        >删除</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="warning"
-          plain
-          icon="el-icon-download"
-          size="mini"
-          @click="handleExport"
-          v-hasPermi="['blog:blog:export']"
-        >导出</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="el-icon-s-promotion"
-          size="mini"
-          @click="handleAllPublish"
-        >全量发布</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="success"
-          plain
-          icon="el-icon-s-promotion"
-          size="mini"
-          @click="handlePublish"
-        >发布</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
-
-    <el-table v-loading="loading" :data="blogList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="店铺类型" align="center" width="120" show-overflow-tooltip>
-        <template slot-scope="scope">
-          <span>{{ getShopTypeName(scope.row.typeId) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="店铺" align="center" width="120" show-overflow-tooltip>
-        <template slot-scope="scope">
-          <span>{{ getShopName(scope.row.shopId) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="用户" align="center" width="120" show-overflow-tooltip>
-        <template slot-scope="scope">
-          <span>{{ getUserName(scope.row.userId) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="标题" align="center" prop="title" show-overflow-tooltip />
-      <el-table-column label="点赞数" align="center" prop="liked" width="80">
-        <template slot-scope="scope">
-          <el-tag size="small" type="danger">{{ scope.row.liked || 0 }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="评论数" align="center" prop="comments" width="80">
-        <template slot-scope="scope">
-          <el-tag size="small" type="info">{{ scope.row.comments || 0 }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" width="160">
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}') }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200">
-        <template slot-scope="scope">
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-view"
-            @click="handleDetail(scope.row)"
-          >详情</el-button>
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-edit"
-            @click="handleUpdate(scope.row)"
-            v-hasPermi="['blog:blog:edit']"
-          >修改</el-button>
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-delete"
-            @click="handleDelete(scope.row)"
-            v-hasPermi="['blog:blog:remove']"
-          >删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-
-    <pagination
-      v-show="total>0"
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
-
-    <!-- 添加或修改博客对话框 -->
-    <el-dialog :title="title" :visible.sync="open" width="700px" append-to-body>
-      <el-form ref="form" :model="form" :rules="rules" label-width="120px">
+    <el-card class="box-card mb-4" shadow="never">
+        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px" class="search-form">
         <el-form-item label="店铺类型" prop="typeId">
-          <el-select
-            v-model="form.typeId"
+            <el-select
+            v-model="queryParams.typeId"
             placeholder="请选择店铺类型"
-            style="width: 100%"
-            @change="handleTypeChange"
-          >
+            clearable
+            style="width: 180px"
+            @change="handleQuery"
+            >
             <el-option
-              v-for="type in shopTypeList"
-              :key="type.id"
-              :label="type.name"
-              :value="type.id"
+                v-for="type in shopTypeList"
+                :key="type.id"
+                :label="type.name"
+                :value="type.id"
             />
-          </el-select>
+            </el-select>
         </el-form-item>
         <el-form-item label="店铺" prop="shopId">
-          <el-select
-            v-model="form.shopId"
+            <el-select
+            v-model="queryParams.shopId"
             placeholder="请选择店铺"
-            style="width: 100%"
-            :disabled="!form.typeId"
-          >
+            clearable
+            filterable
+            style="width: 180px"
+            @change="handleQuery"
+            >
             <el-option
-              v-for="shop in filteredShopList"
-              :key="shop.id"
-              :label="shop.name"
-              :value="shop.id"
+                v-for="shop in shopList"
+                :key="shop.id"
+                :label="shop.name"
+                :value="shop.id"
             />
-          </el-select>
+            </el-select>
         </el-form-item>
         <el-form-item label="用户" prop="userId">
-          <el-select v-model="form.userId" placeholder="请选择用户" style="width: 100%">
+            <el-select
+            v-model="queryParams.userId"
+            placeholder="请选择用户"
+            clearable
+            filterable
+            style="width: 180px"
+            @change="handleQuery"
+            >
+            <el-option
+                v-for="user in userList"
+                :key="user.id"
+                :label="user.nickName"
+                :value="user.id"
+            />
+            </el-select>
+        </el-form-item>
+        <el-form-item label="标题" prop="title">
+            <el-input
+            v-model="queryParams.title"
+            placeholder="请输入标题"
+            clearable
+            @keyup.enter.native="handleQuery"
+            style="width: 200px"
+            />
+        </el-form-item>
+        <el-form-item class="search-btns">
+            <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
+            <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+        </el-form-item>
+        </el-form>
+
+        <el-row :gutter="10" class="mb8 op-btns">
+        <el-col :span="1.5">
+            <el-button
+            type="primary"
+            plain
+            icon="el-icon-plus"
+            size="mini"
+            @click="handleAdd"
+            v-hasPermi="['blog:blog:add']"
+            >新增笔记</el-button>
+        </el-col>
+        <el-col :span="1.5">
+            <el-button
+            type="success"
+            plain
+            icon="el-icon-edit"
+            size="mini"
+            :disabled="single"
+            @click="handleUpdate"
+            v-hasPermi="['blog:blog:edit']"
+            >修改</el-button>
+        </el-col>
+        <el-col :span="1.5">
+            <el-button
+            type="danger"
+            plain
+            icon="el-icon-delete"
+            size="mini"
+            :disabled="multiple"
+            @click="handleDelete"
+            v-hasPermi="['blog:blog:remove']"
+            >删除</el-button>
+        </el-col>
+        <el-col :span="1.5">
+            <el-button
+            type="warning"
+            plain
+            icon="el-icon-download"
+            size="mini"
+            @click="handleExport"
+            v-hasPermi="['blog:blog:export']"
+            >导出</el-button>
+        </el-col>
+          <div class="right-actions">
+            <!-- 假设这些按钮是需要的，保留但优化样式 -->
+            <el-button
+            type="text"
+            icon="el-icon-s-promotion"
+            size="mini"
+            @click="handleAllPublish"
+            >全量发布</el-button>
+            <el-button
+            type="text"
+            icon="el-icon-s-promotion"
+            size="mini"
+            @click="handlePublish"
+            >发布选中</el-button>
+             <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+        </div>
+        </el-row>
+    </el-card>
+
+    <el-card class="box-card" shadow="never">
+        <el-table v-loading="loading" :data="blogList" @selection-change="handleSelectionChange" border stripe :header-cell-style="{background:'#f5f7fa',color:'#606266'}">
+        <el-table-column type="selection" width="55" align="center" />
+        <el-table-column label="笔记ID" align="center" prop="id" width="80" />
+        <el-table-column label="来源信息" min-width="200" show-overflow-tooltip>
+             <template slot-scope="scope">
+                <div class="source-info">
+                   <div class="shop-line">
+                       <el-tag size="mini" effect="plain" type="info" class="type-tag">{{ getShopTypeName(scope.row.typeId) }}</el-tag>
+                       <span class="shop-name"><i class="el-icon-shop"></i> {{ getShopName(scope.row.shopId) }}</span>
+                   </div>
+                   <div class="user-line">
+                       <i class="el-icon-user"></i> {{ getUserName(scope.row.userId) }}
+                   </div>
+                </div>
+            </template>
+        </el-table-column>
+        <el-table-column label="标题" min-width="200" prop="title" show-overflow-tooltip>
+             <template slot-scope="scope">
+                 <span style="font-weight: 500;">{{ scope.row.title }}</span>
+             </template>
+        </el-table-column>
+        <el-table-column label="互动数据" align="center" width="180">
+             <template slot-scope="scope">
+                 <div class="interaction-stats">
+                     <div class="stat-item like">
+                         <i class="el-icon-thumb"></i> {{ scope.row.liked || 0 }}
+                     </div>
+                     <div class="stat-item comment">
+                         <i class="el-icon-chat-line-round"></i> {{ scope.row.comments || 0 }}
+                     </div>
+                 </div>
+            </template>
+        </el-table-column>
+        
+        <el-table-column label="创建时间" align="center" prop="createTime" width="160">
+            <template slot-scope="scope">
+            <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}') }}</span>
+            </template>
+        </el-table-column>
+        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200" fixed="right">
+            <template slot-scope="scope">
+            <el-button
+                size="mini"
+                type="text"
+                icon="el-icon-view"
+                @click="handleDetail(scope.row)"
+            >详情</el-button>
+            <el-button
+                size="mini"
+                type="text"
+                icon="el-icon-edit"
+                @click="handleUpdate(scope.row)"
+                v-hasPermi="['blog:blog:edit']"
+            >修改</el-button>
+            <el-button
+                size="mini"
+                type="text"
+                icon="el-icon-delete"
+                class="text-danger"
+                @click="handleDelete(scope.row)"
+                v-hasPermi="['blog:blog:remove']"
+            >删除</el-button>
+            </template>
+        </el-table-column>
+        </el-table>
+
+        <pagination
+        v-show="total>0"
+        :total="total"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
+        @pagination="getList"
+        />
+    </el-card>
+
+    <!-- 添加或修改博客对话框 -->
+    <el-dialog :title="title" :visible.sync="open" width="800px" append-to-body custom-class="note-edit-dialog">
+      <el-form ref="form" :model="form" :rules="rules" label-width="100px" class="edit-form">
+        <el-row>
+             <el-col :span="12">
+                 <el-form-item label="店铺类型" prop="typeId">
+                <el-select
+                    v-model="form.typeId"
+                    placeholder="请选择店铺类型"
+                    style="width: 100%"
+                    @change="handleTypeChange"
+                >
+                    <el-option
+                    v-for="type in shopTypeList"
+                    :key="type.id"
+                    :label="type.name"
+                    :value="type.id"
+                    />
+                </el-select>
+                </el-form-item>
+             </el-col>
+             <el-col :span="12">
+                  <el-form-item label="关联店铺" prop="shopId">
+                <el-select
+                    v-model="form.shopId"
+                    placeholder="请选择店铺"
+                    style="width: 100%"
+                    :disabled="!form.typeId"
+                >
+                    <el-option
+                    v-for="shop in filteredShopList"
+                    :key="shop.id"
+                    :label="shop.name"
+                    :value="shop.id"
+                    />
+                </el-select>
+                </el-form-item>
+             </el-col>
+        </el-row>
+        
+        <el-form-item label="发布用户" prop="userId">
+          <el-select v-model="form.userId" placeholder="请选择用户" style="width: 100%" filterable>
             <el-option
               v-for="user in userList"
               :key="user.userId"
@@ -237,8 +255,8 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="标题" prop="title">
-          <el-input v-model="form.title" placeholder="请输入标题" />
+        <el-form-item label="笔记标题" prop="title">
+          <el-input v-model="form.title" placeholder="请输入引人注目的标题" />
         </el-form-item>
 
         <!-- 图片上传部分 -->
@@ -255,78 +273,73 @@
               multiple
               :limit="9"
               :on-exceed="handleExceed"
+              class="visual-upload"
             >
               <i class="el-icon-plus"></i>
+              <div class="upload-text" slot="default">点击或拖拽上传</div>
             </el-upload>
             <div class="tips">
-              <p>提示：</p>
-              <p>1. 最多可上传9张图片</p>
-              <p>2. 支持 JPG、PNG 格式</p>
-              <p>3. 单张图片不超过 2MB</p>
+              <i class="el-icon-info"></i> 最多9张，JPG/PNG格式，单张&lt;2MB
             </div>
           </div>
         </el-form-item>
 
-        <el-form-item label="文字描述" prop="content">
-          <editor v-model="form.content" :min-height="192"/>
+        <el-form-item label="详细内容" prop="content">
+          <editor v-model="form.content" :min-height="300"/>
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitForm">确 定</el-button>
         <el-button @click="cancel">取 消</el-button>
+        <el-button type="primary" @click="submitForm">确 定</el-button>
       </div>
     </el-dialog>
 
     <!-- 博客详情对话框 -->
-    <el-dialog title="博客详情" :visible.sync="detailOpen" width="800px" append-to-body>
-      <el-descriptions :column="2" border>
-        <el-descriptions-item label="博客ID">{{ detailForm.id }}</el-descriptions-item>
-        <el-descriptions-item label="店铺类型">
-          {{ getShopTypeName(detailForm.typeId) }}
-        </el-descriptions-item>
-        <el-descriptions-item label="店铺">
-          {{ getShopName(detailForm.shopId) }}
-        </el-descriptions-item>
-        <el-descriptions-item label="用户">
-          {{ getUserName(detailForm.userId) }}
-        </el-descriptions-item>
-        <el-descriptions-item label="标题" :span="2">
-          <span style="font-weight: bold; font-size: 16px;">{{ detailForm.title }}</span>
-        </el-descriptions-item>
-        <el-descriptions-item label="点赞数">
-          <el-tag type="danger" size="medium">{{ detailForm.liked || 0 }}</el-tag>
-        </el-descriptions-item>
-        <el-descriptions-item label="评论数">
-          <el-tag type="info" size="medium">{{ detailForm.comments || 0 }}</el-tag>
-        </el-descriptions-item>
-        <el-descriptions-item label="创建时间">
-          {{ parseTime(detailForm.createTime) }}
-        </el-descriptions-item>
-        <el-descriptions-item label="更新时间">
-          {{ parseTime(detailForm.updateTime) }}
-        </el-descriptions-item>
-        <el-descriptions-item label="图片" :span="2" v-if="detailForm.imageList && detailForm.imageList.length > 0">
-          <div class="image-preview-detail">
-            <el-image
-              v-for="(img, index) in detailForm.imageList"
-              :key="index"
-              :src="img"
-              fit="cover"
-              style="width: 120px; height: 120px; margin: 5px; border-radius: 8px;"
-              :preview-src-list="detailForm.imageList"
-            >
-              <div slot="error" class="image-slot">
-                <i class="el-icon-picture-outline"></i>
-                <div>加载失败</div>
-              </div>
-            </el-image>
-          </div>
-          <div class="image-count-tip">共 {{ detailForm.imageList.length }} 张图片，点击可预览</div>
-        </el-descriptions-item>
-        <el-descriptions-item label="内容描述" :span="2">
-          <div class="content-detail" v-html="detailForm.content"></div>
-        </el-descriptions-item>
-      </el-descriptions>
+    <el-dialog :title="detailForm.title" :visible.sync="detailOpen" width="900px" append-to-body custom-class="note-detail-dialog">
+        <div class="detail-container">
+             <div class="detail-meta-bar">
+                 <div class="meta-left">
+                     <span class="meta-tag shop-type">{{ getShopTypeName(detailForm.typeId) }}</span>
+                     <span class="meta-text shop"><i class="el-icon-shop"></i> {{ getShopName(detailForm.shopId) }}</span>
+                 </div>
+                 <div class="meta-right">
+                      <span class="meta-text user"><i class="el-icon-user"></i> {{ getUserName(detailForm.userId) }}</span>
+                      <span class="meta-text time">{{ parseTime(detailForm.createTime) }}</span>
+                 </div>
+             </div>
+
+             <div class="detail-stats-row">
+                 <div class="stat-box">
+                     <div class="label">点赞</div>
+                     <div class="val like">{{ detailForm.liked || 0 }}</div>
+                 </div>
+                 <div class="stat-box">
+                     <div class="label">评论</div>
+                     <div class="val comment">{{ detailForm.comments || 0 }}</div>
+                 </div>
+             </div>
+
+             <div class="detail-gallery" v-if="detailForm.imageList && detailForm.imageList.length > 0">
+                <div class="gallery-title">相册 ({{ detailForm.imageList.length }})</div>
+                <div class="gallery-grid">
+                    <el-image
+                    v-for="(img, index) in detailForm.imageList"
+                    :key="index"
+                    :src="img"
+                    fit="cover"
+                    class="gallery-item"
+                    :preview-src-list="detailForm.imageList"
+                    >
+                    </el-image>
+                </div>
+             </div>
+
+             <div class="detail-content">
+                 <div class="content-title">内容详情</div>
+                 <div class="content-body" v-html="detailForm.content"></div>
+             </div>
+        </div>
+
       <div slot="footer" class="dialog-footer">
         <el-button @click="detailOpen = false">关 闭</el-button>
       </div>
@@ -679,61 +692,191 @@ export default {
 }
 </script>
 
-<style scoped>
+</script>
+
+<style scoped lang="scss">
+.app-container {
+    padding: 20px;
+    background-color: #f0f2f5;
+    min-height: 100vh;
+}
+.box-card {
+    border-radius: 8px;
+    border: none;
+    .el-card__body {
+        padding: 20px;
+    }
+}
+.mb-4 {
+    margin-bottom: 20px;
+}
+.text-danger { color: #f56c6c; }
+
+/* 搜索与操作相关 */
+.search-form {
+    .el-form-item {
+        margin-bottom: 10px;
+        margin-right: 20px;
+    }
+}
+.search-btns {
+    margin-left: 10px;
+}
+.op-btns {
+    margin-top: 15px;
+    display: flex;
+    align-items: center;
+    .right-actions {
+        margin-left: auto;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+}
+
+/* 列表样式优化 */
+.source-info {
+    .shop-line {
+        display: flex;
+        align-items: center;
+        margin-bottom: 4px;
+        .type-tag { margin-right: 6px; }
+        .shop-name { font-size: 13px; color: #303133; i { margin-right: 2px; } }
+    }
+    .user-line {
+        font-size: 12px;
+        color: #909399;
+        i { margin-right: 4px; }
+    }
+}
+
+.interaction-stats {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    .stat-item {
+        display: flex;
+        align-items: center;
+        font-size: 13px;
+        i { margin-right: 4px; font-size: 14px; }
+        &.like { color: #f56c6c; }
+        &.comment { color: #409EFF; }
+    }
+}
+
+/* 上传样式优化 */
 .upload-container {
-  border: 1px solid #e6e6e6;
-  border-radius: 4px;
-  padding: 12px;
-  background: #fafafa;
-}
-
-.tips {
-  background: #f0f9ff;
-  border: 1px solid #bae7ff;
-  border-radius: 4px;
-  padding: 8px 12px;
-  font-size: 12px;
-  color: #1890ff;
-  margin-top: 12px;
-}
-
-.tips p {
-  margin: 2px 0;
-}
-
-.image-preview-detail {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 8px;
-}
-
-.image-count-tip {
+  border: 1px dashed #d9d9d9;
+  border-radius: 6px;
+  background-color: #fafafa;
+  padding: 20px;
   text-align: center;
-  color: #909399;
-  font-size: 12px;
-  margin-top: 8px;
+  transition: border-color .3s;
+  
+  &:hover {
+      border-color: #409EFF;
+  }
+
+  .visual-upload {
+      ::v-deep .el-upload--picture-card {
+          width: 100px;
+          height: 100px;
+          line-height: 100px;
+      }
+      ::v-deep .el-upload-list--picture-card .el-upload-list__item {
+          width: 100px;
+          height: 100px;
+      }
+  }
+
+  .tips {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #909399;
+      i { margin-right: 4px; }
+  }
 }
 
-.content-detail {
-  max-height: 300px;
-  overflow-y: auto;
-  border: 1px solid #e6e6e6;
-  padding: 12px;
-  border-radius: 4px;
-  background: #fafafa;
+/* 详情弹窗优化 */
+.detail-container {
+    padding: 0 10px;
 }
 
-.image-slot {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-  background: #f5f7fa;
-  color: #909399;
-  border-radius: 8px;
+.detail-meta-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #ebeef5;
+    margin-bottom: 20px;
+    
+    .meta-left, .meta-right {
+        display: flex;
+        align-items: center;
+    }
+    
+    .meta-text {
+        font-size: 13px;
+        color: #606266;
+        margin-left: 15px;
+        display: flex;
+        align-items: center;
+        i { margin-right: 4px; }
+        &.shop { color: #303133; font-weight: 500; }
+    }
+    
+    .meta-tag {
+        background: #ecf5ff;
+        color: #409EFF;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+    }
+}
+
+.detail-stats-row {
+    display: flex;
+    gap: 40px;
+    margin-bottom: 25px;
+    
+    .stat-box {
+        text-align: center;
+        .label { font-size: 12px; color: #909399; margin-bottom: 4px; }
+        .val { 
+            font-size: 20px; 
+            font-weight: bold; 
+            &.like { color: #f56c6c; }
+            &.comment { color: #409EFF; }
+        }
+    }
+}
+
+.detail-gallery {
+    margin-bottom: 30px;
+    .gallery-title { font-size: 14px; font-weight: 600; color: #303133; margin-bottom: 10px; }
+    .gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 10px;
+        .gallery-item {
+            width: 100%;
+            height: 100px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+    }
+}
+
+.detail-content {
+    .content-title { font-size: 14px; font-weight: 600; color: #303133; margin-bottom: 10px; }
+    .content-body {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 6px;
+        min-height: 100px;
+        line-height: 1.6;
+        font-size: 14px;
+        color: #606266;
+    }
 }
 </style>

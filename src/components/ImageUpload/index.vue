@@ -128,7 +128,20 @@ export default {
           // 然后将数组转为对象数组
           this.fileList = list.map(item => {
             if (typeof item === "string") {
-              item = { name: item, url: item }
+              let url = item
+              // 处理显示路径
+              if (!url.startsWith("http") && !url.startsWith("https")) {
+                  let base = process.env.VUE_APP_FILE_BASE_API || ''
+                  if (base.endsWith('/')) base = base.slice(0, -1)
+                  if (!url.startsWith('/')) url = '/' + url
+                  
+                  let fullUrl = base + url
+                  if (fullUrl.includes('/smart-live/smart-live')) {
+                      fullUrl = fullUrl.replace('/smart-live/smart-live', '/smart-live')
+                  }
+                  url = fullUrl
+              }
+              item = { name: item, url: url }
             }
             return item
           })
@@ -190,7 +203,20 @@ export default {
     // 上传成功回调
     handleUploadSuccess(res, file) {
       if (res.code === 200) {
-        this.uploadList.push({ name: res.data.url, url: res.data.url })
+        let url = res.data.url
+        // 处理显示路径
+        if (!url.startsWith("http") && !url.startsWith("https")) {
+            let base = process.env.VUE_APP_FILE_BASE_API || ''
+            if (base.endsWith('/')) base = base.slice(0, -1)
+            if (!url.startsWith('/')) url = '/' + url
+            
+            let fullUrl = base + url
+            if (fullUrl.includes('/smart-live/smart-live')) {
+                fullUrl = fullUrl.replace('/smart-live/smart-live', '/smart-live')
+            }
+            url = fullUrl
+        }
+        this.uploadList.push({ name: res.data.url, url: url })
         this.uploadedSuccessfully()
       } else {
         this.number--
@@ -234,7 +260,24 @@ export default {
       separator = separator || ","
       for (let i in list) {
         if (list[i].url) {
-          strs += list[i].url.replace(this.baseUrl, "") + separator
+          let url = list[i].url
+          // 如果是完整链接，尝试获取路径
+          if (url.indexOf("http") === 0) {
+             try {
+                // simple replace domain
+                // new URL(url).pathname 得到 /smart-live/2026/01/20/...
+                let pathname = new URL(url).pathname
+                // 移除 /smart-live 前缀
+                if (pathname.indexOf("/smart-live") === 0) {
+                    pathname = pathname.replace("/smart-live", "")
+                }
+                url = pathname
+             } catch (e) {
+                // ignore
+             }
+          }
+          // 解码，防止中文名乱码
+          strs += decodeURIComponent(url) + separator
         }
       }
       return strs != '' ? strs.substr(0, strs.length - 1) : ''

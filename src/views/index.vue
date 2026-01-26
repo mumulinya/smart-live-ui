@@ -2,8 +2,9 @@
   <div class="app-container home">
     <!-- 统计卡片区域 - 调整间距 -->
     <div class="stats-section">
-      <el-row :gutter="50" class="stats-row">
-        <el-col :xs="12" :sm="8" :lg="6">
+      <el-row :gutter="20" class="stats-row">
+        <!-- 现有统计 -->
+        <el-col :xs="12" :sm="8" :lg="4">
           <div class="stats-card">
             <div class="stats-icon" style="background: #409EFF;">
               <i class="el-icon-office-building"></i>
@@ -15,7 +16,7 @@
           </div>
         </el-col>
 
-        <el-col :xs="12" :sm="8" :lg="6">
+        <el-col :xs="12" :sm="8" :lg="4">
           <div class="stats-card">
             <div class="stats-icon" style="background: #67C23A;">
               <i class="el-icon-notebook-1"></i>
@@ -27,7 +28,7 @@
           </div>
         </el-col>
 
-        <el-col :xs="12" :sm="8" :lg="6">
+        <el-col :xs="12" :sm="8" :lg="4">
           <div class="stats-card">
             <div class="stats-icon" style="background: #E6A23C;">
               <i class="el-icon-goods"></i>
@@ -39,7 +40,7 @@
           </div>
         </el-col>
 
-        <el-col :xs="12" :sm="8" :lg="6">
+        <el-col :xs="12" :sm="8" :lg="4">
           <div class="stats-card">
             <div class="stats-icon" style="background: #F56C6C;">
               <i class="el-icon-shopping-bag-1"></i>
@@ -47,6 +48,31 @@
             <div class="stats-content">
               <div class="stats-number">{{ statsData.totalOrders }}</div>
               <div class="stats-label">总订单</div>
+            </div>
+          </div>
+        </el-col>
+
+        <!-- 新增统计: 用户和评论 -->
+        <el-col :xs="12" :sm="8" :lg="4">
+          <div class="stats-card">
+            <div class="stats-icon" style="background: #909399;">
+              <i class="el-icon-user"></i>
+            </div>
+            <div class="stats-content">
+              <div class="stats-number">{{ statsData.totalUsers }}</div>
+              <div class="stats-label">总用户</div>
+            </div>
+          </div>
+        </el-col>
+
+        <el-col :xs="12" :sm="8" :lg="4">
+          <div class="stats-card">
+            <div class="stats-icon" style="background: #36a3f7;">
+              <i class="el-icon-chat-dot-square"></i>
+            </div>
+            <div class="stats-content">
+              <div class="stats-number">{{ statsData.totalComments }}</div>
+              <div class="stats-label">总评论</div>
             </div>
           </div>
         </el-col>
@@ -163,6 +189,54 @@
           </div>
         </el-card>
       </el-col>
+
+      <!-- 新增: 最新用户 -->
+      <el-col :xs="24" :sm="12" :lg="12">
+        <el-card class="dynamic-card" shadow="never">
+          <template #header>
+            <div class="dynamic-header">
+              <span>最新用户</span>
+              <el-button type="text" @click="$router.push('/business/user')">查看全部</el-button>
+            </div>
+          </template>
+          <div class="dynamic-list">
+            <div v-for="user in recentUsers" :key="user.id" class="dynamic-item">
+              <div class="dynamic-item-main">
+                <div class="dynamic-title">{{ user.nickName }}</div>
+                <div class="dynamic-desc">ID: {{ user.id }} · {{ user.city || '未知城市' }}</div>
+                <div class="dynamic-time">{{ user.createTime }}</div>
+              </div>
+              <el-tag :type="user.status === '0' ? 'success' : 'danger'" size="small">
+                {{ user.status === '0' ? '正常' : '禁用' }}
+              </el-tag>
+            </div>
+          </div>
+        </el-card>
+      </el-col>
+
+      <!-- 新增: 最新评论 -->
+      <el-col :xs="24" :sm="12" :lg="12">
+        <el-card class="dynamic-card" shadow="never">
+          <template #header>
+            <div class="dynamic-header">
+              <span>最新评论</span>
+              <el-button type="text" @click="$router.push('/business/comment')">查看全部</el-button>
+            </div>
+          </template>
+          <div class="dynamic-list">
+            <div v-for="comment in recentComments" :key="comment.id" class="dynamic-item">
+              <div class="dynamic-item-main">
+                <div class="dynamic-title">{{ comment.userName }}</div>
+                <div class="dynamic-desc" v-html="comment.content"></div>
+                <div class="dynamic-time">{{ comment.createTime }}</div>
+              </div>
+               <el-tag :type="comment.sourceType === '1' ? 'primary' : 'success'" size="small">
+                {{ comment.sourceType === '1' ? '博客' : '店铺' }}
+              </el-tag>
+            </div>
+          </div>
+        </el-card>
+      </el-col>
     </el-row>
   </div>
 </template>
@@ -179,6 +253,8 @@ import {
   getRecentBlogs, getRecentShops
 } from '@/api/index'
 import {listShopType} from "@/api/shop/shopType";
+import {listUser} from "@/api/user/user"
+import {listComment} from "@/api/comment/comment"
 
 export default {
   name: "Dashboard",
@@ -196,15 +272,21 @@ export default {
         totalBlogs: 0,
         totalCoupons: 0,
         totalOrders: 0,
+        totalUsers: 0, // 新增
+        totalComments: 0, // 新增
         todayReviews: 0
       },
       recentShops: [], // 最新店铺列表
       recentOrders: [], // 最新订单列表
       recentBlogs: [], // 最新博客列表
+      recentUsers: [], // 最新用户列表
+      recentComments: [], // 最新评论列表
       // 列表总数（可选）
       shopTotal: 0,
       orderTotal: 0,
       blogTotal: 0,
+      userTotal: 0,
+      commentTotal: 0,
 
       // 图表实例
       shopChart: null,
@@ -382,6 +464,25 @@ export default {
           this.blogTotal = response.data.total
         }).catch(() => {
           this.recentBlogs = this.mockData.recentBlogs
+        })
+
+        // 5. 获取最新用户列表 (复用查询列表接口)
+        await listUser({ pageNum: 1, pageSize: 5 }).then(response => {
+            this.recentUsers = response.rows || []
+            this.userTotal = response.total
+            this.statsData.totalUsers = response.total
+        })
+
+        // 6. 获取最新评论列表 (复用查询列表接口)
+        await listComment({ pageNum: 1, pageSize: 5 }).then(response => {
+            this.recentComments = response.rows || []
+             // 简单的增强处理，模拟一些显示数据
+            this.recentComments.forEach(item => {
+               // 这里如果接口返回了userName最好，否则可能需要额外查询，暂时假设后端或者之前逻辑能处理
+               // 实际comment list row里应该包含 userName 字段 if 联查
+            })
+            this.commentTotal = response.total
+            this.statsData.totalComments = response.total
         })
 
       } catch (error) {
@@ -711,8 +812,10 @@ export default {
 
 <style scoped lang="scss">
 .home {
+  padding-bottom: 20px;
+
   .stats-section {
-    margin-bottom: 24px;
+    margin-bottom: 20px;
   }
 
   .stats-row {
@@ -721,65 +824,102 @@ export default {
 
   .stats-card {
     background: #fff;
-    border-radius: 8px;
-    padding: 24px;
-    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.05); // softer shadow
     display: flex;
     align-items: center;
-    transition: all 0.3s ease;
-    border: 1px solid #ebeef5;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    border: none; // remove border for cleaner look
     height: 120px;
+    position: relative;
+    overflow: hidden;
+
+    &::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%);
+        transform: rotate(30deg);
+        opacity: 0;
+        transition: opacity 0.5s;
+        pointer-events: none;
+    }
 
     &:hover {
-      box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.15);
-      transform: translateY(-2px);
+      box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.1);
+      transform: translateY(-5px);
+      &::after {
+          opacity: 0.1;
+      }
     }
   }
 
   .stats-icon {
-    width: 70px;
-    height: 70px;
-    border-radius: 10px;
+    width: 60px;
+    height: 60px;
+    border-radius: 16px; // softer corners
     display: flex;
     align-items: center;
     justify-content: center;
     margin-right: 20px;
     flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 
     i {
-      font-size: 32px;
+      font-size: 28px;
       color: white;
     }
   }
 
   .stats-content {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
 
   .stats-number {
-    font-size: 28px;
-    font-weight: 600;
-    color: #303133;
-    line-height: 1.2;
-    margin-bottom: 6px;
+    font-size: 32px;
+    font-weight: 700;
+    color: #2c3e50;
+    line-height: 1.1;
+    margin-bottom: 4px;
+    letter-spacing: -0.5px;
   }
 
   .stats-label {
     font-size: 14px;
     color: #909399;
-    font-weight: 400;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
   }
 
   .chart-row {
-    margin-bottom: 20px;
+    margin-bottom: 25px;
   }
 
   .chart-card, .dynamic-card {
     border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+    background: #fff;
 
     ::v-deep(.el-card__header) {
-      border-bottom: 1px solid #EBEEF5;
-      padding: 15px 20px;
+      border-bottom: 1px solid #f0f2f5;
+      padding: 20px 25px;
+      font-weight: 600;
+      font-size: 16px;
+      color: #303133;
+    }
+    
+    ::v-deep(.el-card__body) {
+        padding: 20px;
     }
   }
 
@@ -787,77 +927,107 @@ export default {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    span {
+        position: relative;
+        padding-left: 12px;
+        &::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 16px;
+            background: #409EFF;
+            border-radius: 2px;
+        }
+    }
   }
 
   .dynamic-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    span {
+        position: relative;
+        padding-left: 12px;
+        &::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 16px;
+            background: #67C23A; // Different color for lists
+            border-radius: 2px;
+        }
+    }
+    .el-button {
+        font-size: 13px;
+        padding: 0;
+    }
   }
 
   .dynamic-list {
     .dynamic-item {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
-      padding: 12px 0;
-      border-bottom: 1px solid #F2F6FC;
-
+      align-items: flex-start; // Align top for better multiline support
+      padding: 15px 0;
+      border-bottom: 1px solid #f2f6fc;
+      transition: background-color 0.2s;
+      
       &:last-child {
         border-bottom: none;
       }
-    }
+      
+      &:hover {
+          background-color: #f9fafc;
+          border-radius: 8px;
+          padding-left: 10px;
+          padding-right: 10px;
+          margin: 0 -10px; // Compensate padding
+      }
 
-    .dynamic-item-main {
-      flex: 1;
-      margin-right: 15px;
-    }
+      .dynamic-item-main {
+        flex: 1;
+        margin-right: 15px;
 
-    .dynamic-title {
-      font-weight: 500;
-      color: #303133;
-      margin-bottom: 4px;
-      line-height: 1.4;
-    }
+        .dynamic-title {
+          font-size: 14px;
+          color: #303133;
+          font-weight: 500;
+          margin-bottom: 6px;
+          line-height: 1.4;
+        }
 
-    .dynamic-desc {
-      font-size: 12px;
-      color: #909399;
-      margin-bottom: 4px;
-      line-height: 1.4;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
+        .dynamic-desc {
+          font-size: 12px;
+          color: #909399;
+          margin-bottom: 6px;
+          line-height: 1.4;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
 
-    .dynamic-time {
-      font-size: 12px;
-      color: #C0C4CC;
-    }
-  }
-
-  .quick-action-card {
-    border: none;
-
-    .quick-actions {
-      display: flex;
-      gap: 15px;
-      flex-wrap: wrap;
+        .dynamic-time {
+          font-size: 12px;
+          color: #C0C4CC;
+        }
+      }
     }
   }
 }
 
-// 响应式调整
-@media (max-width: 768px) {
-  .home {
-    .quick-actions {
-      justify-content: center;
-    }
-
+  // 响应式调整
+  @media (max-width: 768px) {
     .stats-card {
-      padding: 20px;
-      height: 100px;
+      padding: 15px;
+      height: auto;
     }
 
     .stats-icon {
@@ -871,29 +1041,7 @@ export default {
     }
 
     .stats-number {
-      font-size: 22px;
-    }
-  }
-}
-
-@media (max-width: 1200px) {
-  .home {
-    .stats-card {
-      padding: 20px;
-    }
-
-    .stats-icon {
-      width: 60px;
-      height: 60px;
-
-      i {
-        font-size: 28px;
-      }
-    }
-
-    .stats-number {
       font-size: 24px;
     }
   }
-}
 </style>

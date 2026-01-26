@@ -3,7 +3,7 @@ import request from '@/utils/request'
 // 查询评论列表
 export function listComment(query) {
   return request({
-    url: '/comment/list',
+    url: '/interaction/comment/list',
     method: 'get',
     params: query
   })
@@ -12,7 +12,7 @@ export function listComment(query) {
 // 查询评论详细
 export function getComment(id) {
   return request({
-    url: '/comment/' + id,
+    url: '/interaction/comment/' + id,
     method: 'get'
   })
 }
@@ -20,7 +20,7 @@ export function getComment(id) {
 // 新增评论
 export function addComment(data) {
   return request({
-    url: '/comment',
+    url: '/interaction/comment',
     method: 'post',
     data: data
   })
@@ -29,7 +29,7 @@ export function addComment(data) {
 // 修改评论
 export function updateComment(data) {
   return request({
-    url: '/comment',
+    url: '/interaction/comment',
     method: 'put',
     data: data
   })
@@ -38,7 +38,7 @@ export function updateComment(data) {
 // 删除评论
 export function delComment(id) {
   return request({
-    url: '/comment/' + id,
+    url: '/interaction/comment/' + id,
     method: 'delete'
   })
 }
@@ -46,7 +46,7 @@ export function delComment(id) {
 // ai生成评论
 export function aiCreateComment() {
   return request({
-    url: '/comment/aiCreateComment',
+    url: '/interaction/comment/aiCreateComment',
     method: 'post'
   })
 }

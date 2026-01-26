@@ -99,8 +99,8 @@
             <div class="avatar-compare">
               <div class="avatar-box">
                 <el-image 
-                  :src="row.oldAvatar" 
-                  :preview-src-list="[row.oldAvatar]"
+                  :src="getFileUrl(row.oldAvatar)" 
+                  :preview-src-list="[getFileUrl(row.oldAvatar)]"
                   fit="cover"
                   class="avatar-thumb"
                 >
@@ -111,8 +111,8 @@
               <i class="el-icon-right arrow-icon"></i>
               <div class="avatar-box">
                 <el-image 
-                  :src="row.newAvatar" 
-                  :preview-src-list="[row.newAvatar]"
+                  :src="getFileUrl(row.newAvatar)" 
+                  :preview-src-list="[getFileUrl(row.newAvatar)]"
                   fit="cover"
                   class="avatar-thumb"
                 >
@@ -230,8 +230,8 @@
             <div class="compare-item">
               <div class="label">当前头像</div>
               <el-image 
-                :src="currentItem.oldAvatar" 
-                :preview-src-list="[currentItem.oldAvatar]"
+                :src="getFileUrl(currentItem.oldAvatar)" 
+                :preview-src-list="[getFileUrl(currentItem.oldAvatar)]"
                 fit="cover" 
                 class="avatar-large"
               >
@@ -242,8 +242,8 @@
             <div class="compare-item">
               <div class="label">新提交头像</div>
               <el-image 
-                :src="currentItem.newAvatar" 
-                :preview-src-list="[currentItem.newAvatar]"
+                :src="getFileUrl(currentItem.newAvatar)" 
+                :preview-src-list="[getFileUrl(currentItem.newAvatar)]"
                 fit="cover" 
                 class="avatar-large"
               >
@@ -296,8 +296,8 @@
           </el-descriptions>
           <div class="section-title">营业执照</div>
           <el-image 
-            :src="currentItem.licenseImage" 
-            :preview-src-list="[currentItem.licenseImage]"
+            :src="getFileUrl(currentItem.licenseImage)" 
+            :preview-src-list="[getFileUrl(currentItem.licenseImage)]"
             fit="contain"
             class="license-img"
           >
@@ -310,7 +310,7 @@
           <div class="section-title">内容详情</div>
           <div v-if="activeTab === 'blog'" class="blog-preview">
              <h3>{{ currentItem.title }}</h3>
-             <el-image v-if="currentItem.coverImage" :src="currentItem.coverImage" class="cover-img" />
+             <el-image v-if="currentItem.coverImage" :src="getFileUrl(currentItem.coverImage)" class="cover-img" />
              <div class="content-html" v-html="currentItem.content"></div>
           </div>
           <div v-else class="comment-preview">
@@ -370,6 +370,7 @@ export default {
       btnLoading: false,
       dialogVisible: false,
       rejectVisible: false,
+      baseUrl: process.env.VUE_APP_FILE_BASE_API,
       currentItem: null,
       currentList: [],
       total: 0,
@@ -437,6 +438,32 @@ export default {
     truncateText(text, len) {
       if (!text) return ''
       return text.length > len ? text.slice(0, len) + '...' : text
+    },
+
+    getFileUrl(url) {
+      if (!url) return ''
+      if (url.startsWith('http') || url.startsWith('https')) return url
+      
+      let base = this.baseUrl || ''
+      // 移除末尾斜杠
+      if (base.endsWith('/')) base = base.slice(0, -1)
+      // 移除开头斜杠
+      if (url.startsWith('/')) url = url.slice(1)
+      
+      // 拼接
+      let fullUrl = `${base}/${url}`
+      
+      // 处理重复的 /smart-live
+      // 如果 base 包含 /smart-live 且 url 也以 smart-live 开头
+      // 例如 base=.../smart-live, url=smart-live/...
+      // 拼接后是 .../smart-live/smart-live/...
+      // 我们将其替换为单个
+      const doublePrefix = '/smart-live/smart-live'
+      if (fullUrl.includes(doublePrefix)) {
+          fullUrl = fullUrl.replace(doublePrefix, '/smart-live')
+      }
+      
+      return fullUrl
     },
     
     async getList() {
