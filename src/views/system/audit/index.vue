@@ -144,6 +144,13 @@
             <span v-else class="text-gray">无图片</span>
           </template>
         </el-table-column>
+        <el-table-column v-if="activeTab === 'evaluation'" label="评分" width="100" align="center">
+           <template slot-scope="{ row }">
+             <div style="color: #ff9900; font-weight: bold;">
+                <i class="el-icon-star-on"></i> {{ row.score }}
+             </div>
+           </template>
+        </el-table-column>
         <el-table-column :label="activeTab === 'blog' ? '标题/内容' : (activeTab === 'evaluation' ? '评价内容' : '评论内容')" min-width="250">
           <template slot-scope="{ row }">
             <div v-if="activeTab === 'blog'">
@@ -151,8 +158,24 @@
               <div class="text-gray text-ellipsis">{{ truncateText(row.content, 30) }}</div>
             </div>
             <div v-else>
+               <div class="mb-5">
+                   <!-- Comment Types -->
+                   <template v-if="activeTab === 'comment'">
+                       <el-tag v-if="row.sourceType === 3" size="mini" effect="plain" type="success">笔记评论</el-tag>
+                       <el-tag v-else-if="row.sourceType === 5" size="mini" effect="plain" type="warning">评论回复</el-tag>
+                   </template>
+                   <!-- Evaluation Types -->
+                   <template v-if="activeTab === 'evaluation'">
+                       <el-tag v-if="row.sourceType === 2" size="mini" effect="plain" type="primary">店铺评价</el-tag>
+                       <el-tag v-else-if="row.sourceType === 4" size="mini" effect="plain" type="warning">代金券评价</el-tag>
+                       <el-tag v-else-if="row.sourceType === 6" size="mini" effect="plain" type="danger">团购评价</el-tag>
+                   </template>
+               </div>
                <div class="text-ellipsis">{{ truncateText(row.content, 50) }}</div>
-               <div v-if="row.rootContent" class="text-gray" style="font-size: 12px; margin-top: 4px;">
+               <div v-if="row.targetTitle" class="text-gray" style="font-size: 12px; margin-top: 4px;">
+                   <i class="el-icon-collection-tag"></i> {{ truncateText(row.targetTitle, 20) }}
+               </div>
+               <div v-else-if="row.rootContent" class="text-gray" style="font-size: 12px; margin-top: 4px;">
                    回复: {{ truncateText(row.rootContent, 20) }}
                </div>
             </div>
@@ -439,7 +462,7 @@
 
         <!-- Blog/Comment/Evaluation类型详情 -->
         <div v-if="activeTab === 'blog' || activeTab === 'comment' || activeTab === 'evaluation'" class="detail-section">
-          <div class="section-title">内容详情</div>
+          <!-- <div class="section-title">内容详情</div> -->
           <div v-if="activeTab === 'blog'" class="blog-preview">
              <h3 class="blog-detail-title">{{ currentItem.title }}</h3>
              
@@ -468,8 +491,32 @@
           </div>
           <div v-else class="comment-preview">
             <div class="section-title">评论内容</div>
+            <div class="mb-10">
+                <!-- Comment Types -->
+                <template v-if="activeTab === 'comment'">
+                    <el-tag v-if="currentItem.sourceType === 3" size="small" effect="plain" type="success">笔记评论</el-tag>
+                    <el-tag v-else-if="currentItem.sourceType === 5" size="small" effect="plain" type="warning">评论回复</el-tag>
+                </template>
+                <!-- Evaluation Types -->
+                <template v-if="activeTab === 'evaluation'">
+                    <el-tag v-if="currentItem.sourceType === 2" size="small" effect="plain" type="primary">店铺评价</el-tag>
+                    <el-tag v-else-if="currentItem.sourceType === 4" size="small" effect="plain" type="warning">代金券评价</el-tag>
+                    <el-tag v-else-if="currentItem.sourceType === 6" size="small" effect="plain" type="danger">团购评价</el-tag>
+                </template>
+            </div>
             <div class="content-box">
                 {{ currentItem.content }}
+            </div>
+
+            <div v-if="activeTab === 'evaluation'" class="detail-block mt-20">
+               <div class="section-title">评分</div>
+               <el-rate
+                  v-model="currentItem.score"
+                  disabled
+                  show-score
+                  text-color="#ff9900"
+                  score-template="{value}分">
+               </el-rate>
             </div>
             
             <div v-if="currentItem.images" class="detail-block mt-20">
@@ -482,6 +529,25 @@
                    :preview-src-list="currentItem.images.split(',').map(item => getFileUrl(item))"
                    class="grid-img" 
                    fit="cover"
+                 />
+               </div>
+            </div>
+
+            <!-- 目标内容展示 -->
+            <div v-if="currentItem.targetTitle || currentItem.targetImages" class="detail-block mt-20" style="background: #f8f9fa; padding: 10px; border-radius: 4px;">
+               <div class="section-title" style="margin-bottom: 10px;">关联目标</div>
+               <div v-if="currentItem.targetTitle" class="mb-10">
+                   <span style="font-weight: bold; color: #606266;">标题：</span>{{ currentItem.targetTitle }}
+               </div>
+               <div v-if="currentItem.targetImages" class="blog-images-grid">
+                 <el-image 
+                   v-for="(img, index) in currentItem.targetImages.split(',')" 
+                   :key="index"
+                   :src="getFileUrl(img)" 
+                   :preview-src-list="currentItem.targetImages.split(',').map(item => getFileUrl(item))"
+                   class="grid-img" 
+                   fit="cover"
+                   style="width: 80px; height: 80px;"
                  />
                </div>
             </div>
