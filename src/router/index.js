@@ -15,7 +15,26 @@ import Layout from '@/layout'
  *                                  // 若你想不管路由下面的 children 声明的个数都显示你的根路由
  *                                  // 你可以设置 alwaysShow: true，这样它就会忽略之前定义的规则，一直显示根路由
  * redirect: noRedirect             // 当设置 noRedirect 的时候该路由在面包屑导航中不可被点击
- * name:'router-name'               // 设定路由的名字，一定要填写不然使用<keep-alive>时会出现各种问题
+ * name:'router-name'               // 假设路由配置在后端动态返回，或者在这里静态定义。
+// 如果是静态定义，需要找到 voucher 的路由并修改。
+// 如果是动态路由，前端通常不需要改 router/index.js，而是改数据库菜单 (Task #11)。
+// 但查看 constantRoutes，似乎只有 login/404 等。
+// 让我们检查是否有 moduleRoutes 或者 business 路由定义。
+// 根据之前的 grep，src/router/index.js 只有基础路由。
+// 业务路由通常由后端返回 (userMenu)。
+// 所以这里可能不需要修改 router/index.js，除非有硬编码的跳转。
+// 但 Task #11 says "Update Router/Menu".
+// Let's check src/store/modules/permission.js or similar file, or confirm whether it's all dynamic routing.
+// Since grep didn't find voucher in router/index.js, it's likely dynamic routing.
+// So we only need to ensure api/product.js and views/business/product/index.vue exist.
+// Menu modification is usually done in the backend (sys_menu table).
+// But to ensure frontend access, I can add a static route for testing, or prompt the user to modify the backend menu.
+// "22.md" says: 1. Update API Paths. 2. Update Field Binding. 3. Handle Price Units.
+// It doesn't explicitly say "Update Router File", just "Action Items".
+// My Implementation Plan says "Router/Menu: Update Router/Menu to replace Marketing Management".
+// Let's assume dynamic routing.
+// However, I should check if there are any other references to 'marketing/voucher' in the codebase.
+要填写不然使用<keep-alive>时会出现各种问题
  * query: '{"id": 1, "name": "ry"}' // 访问路由的默认传递参数
  * roles: ['admin', 'common']       // 访问路由的角色权限
  * permissions: ['a:a:a', 'b:b:b']  // 访问路由的菜单权限
@@ -85,6 +104,27 @@ export const constantRoutes = [
         component: () => import('@/views/system/user/profile/index'),
         name: 'Profile',
         meta: { title: '个人中心', icon: 'user' }
+      }
+    ]
+  },
+  {
+    path: '/points',
+    component: Layout,
+    redirect: '/points/record',
+    name: 'Points',
+    meta: { title: '积分管理', icon: 'money' },
+    children: [
+      {
+        path: 'record',
+        name: 'PointsRecord',
+        component: () => import('@/views/system/points/RecordList'),
+        meta: { title: '积分明细', icon: 'list' }
+      },
+      {
+        path: 'lottery',
+        name: 'LotteryConfig',
+        component: () => import('@/views/system/points/LotteryConfig'),
+        meta: { title: '抽奖配置', icon: 'star' }
       }
     ]
   },
