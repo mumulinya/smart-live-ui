@@ -113,7 +113,7 @@
                 <div class="shop-info-cell">
                     <el-image
                         class="shop-list-img"
-                        :src="getFirstImage(scope.row.images)"
+                        :src="getFirstImage(scope.row.shopLogo || scope.row.images)"
                         fit="cover"
                     >
                         <div slot="error" class="image-slot">
@@ -246,6 +246,10 @@
         <div class="form-section-title">图片素材</div>
         <el-row>
           <el-col :span="24">
+            <el-form-item label="店铺Logo" prop="shopLogo">
+              <div class="upload-tip">建议上传正方形的高清图片，将作为列表页展示图标</div>
+              <imageUpload v-model="form.shopLogo" :fileSize="2" :limit="1" />
+            </el-form-item>
             <el-form-item label="商铺图片" prop="images">
                <div class="upload-tip">建议上传高清实拍图，第一张将作为封面图展示</div>
               <imageUpload v-model="form.images" :fileSize="2" :limit="5"  />
@@ -313,7 +317,7 @@
            <div class="detail-header">
                <div class="detail-cover">
                     <el-image 
-                        :src="getFirstImage(detailForm.images)" 
+                        :src="getFirstImage(detailForm.shopLogo || detailForm.images)" 
                         fit="cover"
                         class="cover-img"
                     >
@@ -494,6 +498,7 @@ export default {
         id: null,
         name: null,
         typeId: null, // 店铺类型ID
+        shopLogo: null,
         images: null,
         area: null,
         address: null,
@@ -925,6 +930,7 @@ export default {
         id: null,
         name: null,
         typeId: null, // 重置店铺类型
+        shopLogo: null,
         images: null,
         area: null,
         address: null,
@@ -1025,13 +1031,21 @@ export default {
     /** 提交按钮 */
     submitForm() {
       this.$refs["form"].validate(valid => {
-        this.form.images = this.form.images
-          .split(',')
-          .map(url => {
-            const index = url.indexOf(this.filePrefix);
-            return index !== -1 ? url.substring(index + this.filePrefix.length) : url;
-          })
-          .join(',');
+        if (this.form.images) {
+          this.form.images = this.form.images
+            .split(',')
+            .map(url => {
+              const index = url.indexOf(this.filePrefix);
+              return index !== -1 ? url.substring(index + this.filePrefix.length) : url;
+            })
+            .join(',');
+        }
+        if (this.form.shopLogo) {
+          const index = this.form.shopLogo.indexOf(this.filePrefix);
+          if (index !== -1) {
+            this.form.shopLogo = this.form.shopLogo.substring(index + this.filePrefix.length);
+          }
+        }
         if (valid) {
           if (this.form.id != null) {
             updateShop(this.form).then(response => {
