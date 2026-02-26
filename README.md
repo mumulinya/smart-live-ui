@@ -1,154 +1,172 @@
-<p align="center">
-  <h1 align="center">🏪 SmartLive 智评生活管理系统</h1>
-  <p align="center">一个基于 Vue 2 + Element UI 的本地生活服务后台管理系统，涵盖店铺、博客、订单、代金券、评论等业务模块的全方位管理。</p>
-</p>
+# SmartLive UI
 
 <p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/Vue-2.6.x-brightgreen.svg" alt="Vue"></a>
-  <a href="#"><img src="https://img.shields.io/badge/Element--UI-2.15.x-blue.svg" alt="Element UI"></a>
-  <a href="#"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License"></a>
-  <a href="#"><img src="https://img.shields.io/badge/Node-%3E%3D8.9-green.svg" alt="Node Version"></a>
+  <img alt="Vue" src="https://img.shields.io/badge/Vue-2.6.x-42b883" />
+  <img alt="Element UI" src="https://img.shields.io/badge/Element--UI-2.15.x-409EFF" />
+  <img alt="Node" src="https://img.shields.io/badge/Node-%3E%3D14-success" />
+  <img alt="License" src="https://img.shields.io/badge/License-MIT-yellow.svg" />
 </p>
 
----
+SmartLive UI 是一个基于 Vue 2 + Element UI 的本地生活业务运营管理后台，覆盖店铺、商品/代金券、订单、笔记、评论、积分、审核、系统管理、监控与开发工具模块。项目基于 RuoYi-Vue 二次开发，适合快速搭建运营后台并对接 Spring Boot 后端。
 
-## 📖 项目简介
+## 目录
 
-**SmartLive（智评生活）** 是一套面向本地生活服务场景的后台管理系统前端项目。系统基于 [RuoYi-Vue](https://gitee.com/y_project/RuoYi-Vue) 框架二次开发，提供了从店铺管理、内容运营到营销活动的完整管理能力，适用于本地生活类 APP 的运营管理。
+- [项目亮点](#项目亮点)
+- [页面预览](#页面预览)
+- [功能模块](#功能模块)
+- [技术栈](#技术栈)
+- [快速开始](#快速开始)
+- [常用命令](#常用命令)
+- [环境变量](#环境变量)
+- [后端代理](#后端代理)
+- [项目结构](#项目结构)
+- [路线图](#路线图)
+- [参与贡献](#参与贡献)
+- [开源协议](#开源协议)
+- [致谢](#致谢)
 
-## ✨ 功能特性
+## 项目亮点
 
-### 🏬 业务管理
+- 动态权限路由：菜单与按钮权限由后端返回，前端按权限动态加载
+- 业务链路完整：店铺、商品/代金券、订单、内容、评论、审核、积分全覆盖
+- 运维工具齐全：内置表单构建与代码生成工具
+- 可视化看板：集成 ECharts 展示核心运营数据
+- 工程化可落地：环境隔离、代理转发、Gzip 压缩、代码分包
 
-| 模块 | 功能 |
-|------|------|
-| **店铺管理** | 店铺 CRUD、店铺分类管理、缓存刷新、批量/单个发布上线 |
-| **博客管理** | 博客 CRUD、批量/单个发布上线 |
-| **评论管理** | 评论 CRUD、**AI 自动生成评论** |
-| **订单管理** | 代金券订单查询、创建、编辑、删除 |
-| **代金券/营销** | 代金券 CRUD、上架/下架、库存管理（MQ 消息）、降价通知（MQ 消息）、批量/单个发布 |
-| **APP 用户管理** | 前端用户 CRUD、批量/单个发布 |
-| **内容审核** | 多业务类型审核（用户/博客/店铺/评论/代金券/团购），支持通过/驳回操作 |
+## 页面预览
 
-### ⚙️ 系统管理
+建议将截图放在 `docs/images` 目录，并按如下命名维护：
 
-- **用户管理** - 系统用户配置、角色分配
-- **角色管理** - 角色权限分配、用户分配
-- **菜单管理** - 系统菜单配置、按钮权限
-- **部门管理** - 组织架构管理
-- **岗位管理** - 岗位信息维护
-- **字典管理** - 系统字典数据维护
-- **参数设置** - 系统参数配置
-- **通知公告** - 系统通知公告发布
-- **操作日志** - 系统操作日志记录与查询
-- **登录日志** - 系统登录日志记录与查询
-
-### 📊 监控中心
-
-- **在线用户** - 实时在线用户监控
-- **定时任务** - 定时任务管理与调度日志
-
-### 🛠️ 开发工具
-
-- **表单构建** - 拖拽式表单设计器
-- **代码生成** - 一键生成前后端 CRUD 代码
-
-### 📈 数据看板（首页）
-
-- **统计卡片** - 总用户数、总店铺、总博客、总代金券、总订单、总评论等核心指标一览
-- **数据图表** - 基于 ECharts 的店铺数据统计、代金券使用情况可视化
-- **最新动态** - 最新店铺、最新订单、最新博客、最新用户、最新评论实时展示
-
-## 🔧 技术栈
-
-| 类目 | 技术 |
-|------|------|
-| 前端框架 | Vue.js 2.6.x |
-| UI 组件库 | Element UI 2.15.x |
-| 状态管理 | Vuex 3.x |
-| 路由 | Vue Router 3.x |
-| HTTP 请求 | Axios |
-| 图表库 | ECharts 5.x |
-| 富文本编辑器 | Quill 2.x |
-| CSS 预处理器 | Sass (Dart Sass) |
-| 构建工具 | Vue CLI 4.x / Webpack 4 |
-| 文件存储 | MinIO |
-| 加密 | JSEncrypt（RSA 加密） |
-| 其他 | Clipboard.js、Screenfull、SortableJS、Vue Cropper 等 |
-
-## 📁 项目结构
-
-```
-smartLive-ui
-├── public/                  # 静态资源
-├── src/
-│   ├── api/                 # API 接口模块
-│   │   ├── blog/            #   博客接口
-│   │   ├── comment/         #   评论接口
-│   │   ├── marketing/       #   营销/代金券接口
-│   │   ├── monitor/         #   监控接口
-│   │   ├── order/           #   订单接口
-│   │   ├── shop/            #   店铺接口
-│   │   ├── system/          #   系统管理接口
-│   │   ├── tool/            #   开发工具接口
-│   │   └── user/            #   APP 用户接口
-│   ├── assets/              # 静态资源（图片、样式、图标）
-│   ├── components/          # 全局公共组件
-│   │   ├── Breadcrumb/      #   面包屑导航
-│   │   ├── Editor/          #   富文本编辑器
-│   │   ├── FileUpload/      #   文件上传
-│   │   ├── ImageUpload/     #   图片上传
-│   │   ├── Pagination/      #   分页组件
-│   │   └── ...              #   更多公共组件
-│   ├── directive/           # 自定义指令
-│   ├── layout/              # 布局组件（侧边栏、导航栏、标签页）
-│   ├── plugins/             # 插件
-│   ├── router/              # 路由配置
-│   ├── store/               # Vuex 状态管理
-│   ├── utils/               # 工具函数
-│   └── views/               # 页面组件
-│       ├── business/        #   业务管理页面
-│       ├── dashboard/       #   仪表盘组件
-│       ├── monitor/         #   监控中心页面
-│       ├── system/          #   系统管理页面
-│       └── tool/            #   开发工具页面
-├── .env.development         # 开发环境配置
-├── .env.production          # 生产环境配置
-├── vue.config.js            # Vue CLI 配置
-└── package.json
+```text
+docs/images/
+├─ dashboard.png
+├─ business-shop.png
+├─ business-product.png
+├─ audit-center.png
+└─ points-center.png
 ```
 
-## 🚀 快速开始
+可直接在 README 中启用以下预览块：
+
+```md
+<!--
+## 页面预览
+
+### 首页看板
+![首页看板](docs/images/dashboard.png)
+
+### 店铺管理
+![店铺管理](docs/images/business-shop.png)
+-->
+```
+
+## 功能模块
+
+### 认证与首页
+
+| 页面 | 路径 | 功能说明 |
+| --- | --- | --- |
+| 登录 | `src/views/login.vue` | 验证码登录、Token 鉴权 |
+| 注册 | `src/views/register.vue` | 用户注册 |
+| 首页看板 | `src/views/index.vue` | KPI 卡片、趋势图、最新动态 |
+| 个人中心 | `src/views/system/user/profile/*` | 资料维护、头像、密码修改 |
+| 错误页 | `src/views/error/401.vue` `src/views/error/404.vue` | 异常页面处理 |
+
+### 业务管理
+
+| 页面 | 路径 | 功能说明 |
+| --- | --- | --- |
+| 店铺管理 | `src/views/business/shop/index.vue` | CRUD、分类筛选、地图选点、图片上传、缓存刷新、发布 |
+| 商品管理 | `src/views/business/product/index.vue` | CRUD、普通/秒杀、库存、有效期、状态切换、批量发布 |
+| 代金券管理 | `src/views/business/voucher/index.vue` | CRUD、库存变更、降价通知、状态切换 |
+| 订单管理 | `src/views/business/order/index.vue` | CRUD、状态流转、支付方式、时间轴详情 |
+| 笔记/博客管理 | `src/views/business/blog/index.vue` | CRUD、富文本、图片上传、发布 |
+| 评论管理 | `src/views/business/comment/index.vue` | CRUD、来源过滤、状态控制、AI 生成评论 |
+| APP 用户管理 | `src/views/business/user/index.vue` | CRUD、头像、发布 |
+
+### 审核中心
+
+| 页面 | 路径 | 功能说明 |
+| --- | --- | --- |
+| 审核中心 | `src/views/system/audit/index.vue` | 多业务审核（用户/文章/店铺/评价/评论/代金券/团购），支持通过/驳回 |
+
+### 积分中心
+
+| 页面 | 路径 | 功能说明 |
+| --- | --- | --- |
+| 积分明细 | `src/views/system/points/RecordList.vue` | 流水查询、时间筛选、用户筛选 |
+| 积分调整 | `src/views/system/points/RecordList.vue` | 手动加减积分并记录备注 |
+| 抽奖奖品配置 | `src/views/system/points/LotteryConfig.vue` | 奖品 CRUD、概率、库存、上下架 |
+
+### 系统管理
+
+| 页面 | 路径 | 功能说明 |
+| --- | --- | --- |
+| 用户管理 | `src/views/system/user/index.vue` | CRUD、角色分配、状态管理、重置密码 |
+| 角色管理 | `src/views/system/role/index.vue` | CRUD、数据权限、分配用户 |
+| 菜单管理 | `src/views/system/menu/index.vue` | 菜单/按钮权限配置 |
+| 部门管理 | `src/views/system/dept/index.vue` | 组织架构维护 |
+| 岗位管理 | `src/views/system/post/index.vue` | 岗位维护 |
+| 字典管理 | `src/views/system/dict/index.vue` `src/views/system/dict/data.vue` | 字典类型与数据维护 |
+| 参数设置 | `src/views/system/config/index.vue` | 系统参数与缓存刷新 |
+| 通知公告 | `src/views/system/notice/index.vue` | 公告发布 |
+| 操作日志 | `src/views/system/operlog/index.vue` | 操作日志查询 |
+| 登录日志 | `src/views/system/logininfor/index.vue` | 登录日志、解锁、清理 |
+
+### 监控中心
+
+| 页面 | 路径 | 功能说明 |
+| --- | --- | --- |
+| 在线用户 | `src/views/monitor/online/index.vue` | 在线会话监控、强制下线 |
+| 定时任务 | `src/views/monitor/job/index.vue` | CRUD、启停、立即执行 |
+| 调度日志 | `src/views/monitor/job/log.vue` | 执行日志查询 |
+
+### 开发工具
+
+| 页面 | 路径 | 功能说明 |
+| --- | --- | --- |
+| 表单构建 | `src/views/tool/build/index.vue` | 拖拽式表单设计 |
+| 代码生成 | `src/views/tool/gen/index.vue` | 表导入、配置、预览、生成、同步 |
+
+## 技术栈
+
+- Vue 2.6.x
+- Element UI 2.15.x
+- Vue Router + Vuex
+- Axios
+- ECharts 5.x
+- Quill 2.x
+- Sass
+- Vue CLI 4 / Webpack 4
+
+## 快速开始
 
 ### 环境要求
 
-- **Node.js** >= 8.9（推荐 14.x 或 16.x）
-- **npm** >= 3.0.0
-- 后端服务需运行在 `http://localhost:8080`
+- Node.js：推荐 `14.x` 或 `16.x`
+- npm：`>= 6`
+- 后端服务：默认 `http://localhost:8080`
 
-> ⚠️ **注意**：Node 17+ 版本需要设置 `NODE_OPTIONS=--openssl-legacy-provider`，项目中已自动配置。
-
-### 安装与运行
+### 安装依赖
 
 ```bash
-# 克隆项目
-git clone https://gitee.com/y_project/smartLive-Vue.git
-
-# 进入项目目录
-cd smartLive-ui
-
-# 安装依赖（推荐使用国内镜像加速）
 npm install --registry=https://registry.npmmirror.com
+```
 
-# 启动开发服务器
+### 启动项目
+
+```bash
 npm run dev
 ```
 
-启动成功后，浏览器访问 http://localhost:80
+启动后访问：`http://localhost:80`
 
-### 构建部署
+## 常用命令
 
 ```bash
+# 启动开发环境
+npm run dev
+
 # 构建测试环境
 npm run build:stage
 
@@ -159,63 +177,74 @@ npm run build:prod
 npm run preview
 ```
 
-## ⚙️ 环境配置
-
-项目通过 `.env.*` 文件管理不同环境的配置：
+## 环境变量
 
 | 文件 | 说明 |
-|------|------|
+| --- | --- |
 | `.env.development` | 开发环境配置 |
-| `.env.production` | 生产环境配置 |
 | `.env.staging` | 测试环境配置 |
+| `.env.production` | 生产环境配置 |
 
-### 核心环境变量
+常用变量：
 
-```bash
-# 页面标题
-VUE_APP_TITLE = 智评生活管理系统
+- `VUE_APP_TITLE`：系统标题
+- `VUE_APP_BASE_API`：接口前缀（如 `/dev-api/admin`）
+- `VUE_APP_FILE_BASE_API`：文件服务地址
+- `VUE_FILE_PREFIX` / `VUE_APP_FILE_PREFIX`：文件路径前缀
 
-# 后端 API 基础路径
-VUE_APP_BASE_API = '/dev-api/admin'
+## 后端代理
 
-# MinIO 文件服务器地址
-VUE_APP_MINIO_URL = 'http://your-minio-host'
-VUE_APP_MINIO_PORT = '9000'
-VUE_APP_FILE_PREFIX = '/smart-live'
+- 代理配置位置：`vue.config.js`
+- 默认映射规则：`/dev-api/admin/** -> http://localhost:8080/admin/**`
+- 动态菜单接口：`/system/menu/getRouters`
+
+## 项目结构
+
+```text
+smartLive-ui
+├─ public
+├─ src
+│  ├─ api
+│  ├─ assets
+│  ├─ components
+│  ├─ directive
+│  ├─ layout
+│  ├─ router
+│  ├─ store
+│  ├─ utils
+│  └─ views
+│     ├─ business
+│     ├─ system
+│     ├─ monitor
+│     └─ tool
+├─ .env.development
+├─ .env.staging
+├─ .env.production
+├─ vue.config.js
+└─ package.json
 ```
 
-### API 代理配置
+## 路线图
 
-开发环境下，前端请求通过 `vue.config.js` 中的 `devServer.proxy` 代理到后端服务：
+- 补充真实页面截图到 `docs/images`
+- 在仓库根目录补充 `LICENSE` 文件（当前 package 声明为 MIT）
+- 更新 `package.json` 的作者和仓库地址为开源仓库信息
+- 使用 `cross-env` 改造脚本，提升 Linux/macOS 兼容性
 
-```
-前端请求 → /dev-api/admin/** → 代理至 → http://localhost:8080/admin/**
-```
-
-## 🔐 权限控制
-
-系统采用 **动态路由 + 角色权限** 机制：
-
-- 基于 Token 的身份认证（支持验证码登录）
-- 登录后动态加载用户角色对应的路由表
-- 菜单级和按钮级细粒度权限控制
-- 路由白名单机制（登录页、注册页免鉴权）
-
-## 🤝 参与贡献
+## 参与贡献
 
 1. Fork 本仓库
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 提交 Pull Request
+2. 新建分支：`feature/your-feature`
+3. 提交代码：`git commit -m "feat: add xxx"`
+4. 推送分支并发起 Pull Request
 
-## 📄 开源协议
+## 开源协议
 
-本项目基于 [MIT 协议](https://opensource.org/licenses/MIT) 开源。
+MIT
 
-## 🙏 致谢
+## 致谢
 
-- [RuoYi-Vue](https://gitee.com/y_project/RuoYi-Vue) - 基础框架
-- [Vue.js](https://vuejs.org/) - 前端框架
-- [Element UI](https://element.eleme.cn/) - UI 组件库
-- [ECharts](https://echarts.apache.org/) - 数据可视化库
+- [RuoYi-Vue](https://gitee.com/y_project/RuoYi-Vue)
+- [Vue.js](https://vuejs.org/)
+- [Element UI](https://element.eleme.cn/)
+- [ECharts](https://echarts.apache.org/)
