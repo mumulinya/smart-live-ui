@@ -125,15 +125,13 @@
         <el-table-column label="商品信息" min-width="220">
             <template slot-scope="scope">
                 <div class="voucher-info-cell">
-                    <div class="v-icon" :class="scope.row.activityType === 1 ? 'seckill' : 'normal'">
-                        <i :class="scope.row.activityType === 1 ? 'el-icon-alarm-clock' : 'el-icon-goods'"></i>
+                    <div class="v-icon" :class="scope.row.activityType === 1 ? 'seckill' : 'normal'" style="overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                        <ImagePreview v-if="scope.row.coverImg" :src="scope.row.coverImg" :width="40" :height="40" />
+                        <i v-else :class="scope.row.activityType === 1 ? 'el-icon-alarm-clock' : 'el-icon-goods'"></i>
                     </div>
                     <div class="v-text">
                         <div class="v-title">{{ scope.row.name }}</div>
                          <div class="v-sub-title" v-if="scope.row.subTitle">{{ scope.row.subTitle }}</div>
-                        <div class="v-shop">
-                             <i class="el-icon-shop"></i> {{ scope.row.shopName }}
-                        </div>
                     </div>
                 </div>
             </template>
@@ -155,8 +153,8 @@
         <el-table-column label="原价 / 售价" align="center" width="160">
             <template slot-scope="scope">
                 <div class="price-info">
-                   <div class="actual-price">原 ¥{{ (scope.row.originalPrice / 100).toFixed(2) }}</div>
-                   <div class="pay-price">售 ¥{{ (scope.row.price / 100).toFixed(2) }}</div>
+                   <div class="actual-price">原 ¥{{ Number(scope.row.originalPrice).toFixed(2) }}</div>
+                   <div class="pay-price">售 ¥{{ Number(scope.row.price).toFixed(2) }}</div>
                 </div>
             </template>
         </el-table-column>
@@ -186,9 +184,9 @@
         <el-table-column label="状态" align="center" prop="status" width="100">
             <template slot-scope="scope">
             <el-tag
-                :type="scope.row.status === 1 ? 'success' : (scope.row.status === 2 ? 'info' : 'warning')"
+                :type="scope.row.status === 1 ? 'success' : (scope.row.status === 2 ? 'info' : (scope.row.status === 0 ? 'warning' : 'danger'))"
             >
-                {{ scope.row.status === 1 ? '上架' : (scope.row.status === 2 ? '下架' : '过期') }}
+                {{ scope.row.status === 1 ? '上架' : (scope.row.status === 2 ? '下架' : (scope.row.status === 0 ? '未审核' : '过期')) }}
             </el-tag>
             </template>
         </el-table-column>
@@ -208,6 +206,7 @@
                 v-hasPermi="['marketing:voucher:edit']"
             >修改</el-button>
             <el-button
+                v-if="scope.row.status !== 0"
                 size="mini"
                 type="text"
                 :class="scope.row.status === 1 ? 'text-warning' : 'text-success'"
@@ -247,6 +246,7 @@
             placeholder="请选择店铺"
             style="width: 100%"
             filterable
+            multiple
             :disabled="!!form.id"
           >
             <el-option
@@ -282,6 +282,9 @@
         </el-form-item>
         <el-form-item label="副标题" prop="subTitle">
           <el-input v-model="form.subTitle" placeholder="请输入副标题 (选填)" maxlength="100" show-word-limit />
+        </el-form-item>
+        <el-form-item label="封面图片" prop="coverImg">
+          <ImageUpload v-model="form.coverImg" :limit="1" />
         </el-form-item>
 
         <div class="form-section-title">价格与规则</div>
@@ -419,19 +422,18 @@
        <div class="voucher-ticket-header" :class="viewForm.activityType === 1 ? 'is-seckill' : 'is-normal'">
            <div class="ticket-left">
                <div class="ticket-val">
-                   <span class="unit">¥</span>{{ (viewForm.originalPrice / 100).toFixed(2) }}
+                   <span class="unit">¥</span>{{ Number(viewForm.originalPrice).toFixed(2) }}
                </div>
                <div class="ticket-tag">{{ viewForm.category === 1 ? '代金券' : '团购套餐' }}</div>
            </div>
            <div class="ticket-right">
                <div class="t-title">{{ viewForm.name }}</div>
                <div class="t-sub">{{ viewForm.subTitle || '暂无副标题' }}</div>
-               <div class="t-shop"><i class="el-icon-shop"></i> {{ viewForm.shopName }}</div>
            </div>
            
            <!-- 状态印章 -->
            <div class="ticket-status-stamp" v-if="viewForm.status !== 1">
-               {{ viewForm.status === 2 ? '已下架' : '已过期' }}
+               {{ viewForm.status === 2 ? '已下架' : (viewForm.status === 0 ? '待审核' : '已过期') }}
            </div>
        </div>
 
@@ -439,14 +441,15 @@
             <div class="detail-section">
                 <div class="section-title">基本信息</div>
                 <div class="info-grid">
+                    <div class="info-item full" v-if="viewForm.coverImg">
+                        <span class="label">封面图片:</span>
+                        <span class="value"><ImagePreview :src="viewForm.coverImg" :width="80" :height="80" /></span>
+                    </div>
                     <div class="info-item">
                         <span class="label">售价:</span>
-                        <span class="value price">¥{{ (viewForm.price / 100).toFixed(2) }}</span>
+                        <span class="value price">¥{{ Number(viewForm.price).toFixed(2) }}</span>
                     </div>
-                     <div class="info-item">
-                        <span class="label">店铺:</span>
-                        <span class="value">{{ viewForm.shopName }}</span>
-                    </div>
+
                     <div class="info-item">
                         <span class="label">库存:</span>
                         <span class="value">{{ viewForm.stock }}</span>
@@ -564,9 +567,10 @@ export default {
       // 表单参数
       form: {
         id: undefined,
-        shopId: undefined,
+        shopId: [],
         name: undefined,
         subTitle: undefined,
+        coverImg: undefined,
         category: 1, // 默认代金券
         activityType: 0, // 默认普通
         price: undefined,
@@ -579,7 +583,7 @@ export default {
         useStartTime: undefined,
         useEndTime: undefined,
         validDays: undefined,
-        status: 1
+        status: 0
       },
       // 详情表单参数
       viewForm: {},
@@ -604,7 +608,7 @@ export default {
       // 表单校验
       rules: {
         shopId: [
-          { required: true, message: "请选择店铺", trigger: "change" }
+          { type: 'array', required: true, message: "请选择店铺", trigger: "change" }
         ],
         name: [
           { required: true, message: "商品名称不能为空", trigger: "blur" },
@@ -673,10 +677,17 @@ export default {
         // 注意：搜索接口返回 document 结构，price 是分
         // 如果是直接查数据库列表，price 可能是 元 或者是 分，这里根据 implementation plan 是分
         const products = response.rows.map(item => {
-          const shop = this.shopList.find(shop => shop.id === item.shopId)
+          let shopNames = []
+          if (item.shopId) {
+             const ids = String(item.shopId).split(',')
+             ids.forEach(id => {
+                 const shop = this.shopList.find(s => String(s.id) === String(id))
+                 if (shop) shopNames.push(shop.name)
+             })
+          }
           return {
             ...item,
-            shopName: shop ? shop.name : (item.shopName || '未知店铺')
+            shopName: shopNames.length > 0 ? shopNames.join('，') : (item.shopName || '未知店铺')
           }
         })
         this.productList = products
@@ -702,9 +713,10 @@ export default {
     reset() {
       this.form = {
         id: undefined,
-        shopId: undefined,
+        shopId: [],
         name: undefined,
         subTitle: undefined,
+        coverImg: undefined,
         category: 1, 
         activityType: 0, 
         price: 0.0,
@@ -717,7 +729,7 @@ export default {
         useStartTime: undefined,
         useEndTime: undefined,
         validDays: undefined,
-        status: 1
+        status: 0
       }
       this.validityRange = []
       this.resetForm("form")
@@ -751,8 +763,25 @@ export default {
       this.reset()
       const id = row.id || this.ids
       getProduct(id).then(response => {
+        let shopIdArray = []
+        if (response.data.shopId) {
+          // Keep as string to match shop.id if shop.id is stored as string, or use Number if shop.id is number
+          // Using String() to handle BigInt issues or just keep them same as the shop.id type
+          // Let's use Number if shop.id in shopList is Number, otherwise String. Usually it's BigInt received as string.
+          // Since it's showing ID instead of name, `el-select` strictly checks type. Let's try matching with `shopList` type.
+          // We will find the first shop in shopList to check its ID type, or just map as string because backend returns string for BigInt.
+          const ids = String(response.data.shopId).split(',')
+          const firstShopIdType = this.shopList.length > 0 ? typeof this.shopList[0].id : 'string'
+          
+          if (firstShopIdType === 'number') {
+              shopIdArray = ids.map(id => Number(id))
+          } else {
+              shopIdArray = ids.map(id => String(id))
+          }
+        }
         this.form = {
           ...response.data,
+          shopId: shopIdArray,
           price: response.data.price, 
           originalPrice: response.data.originalPrice,
           category: response.data.category || 1,
@@ -776,7 +805,14 @@ export default {
       // 这里的 row 来自搜索列表，价格是分
       const id = row.id
       getProduct(id).then(response => {
-        const shop = this.shopList.find(shop => shop.id === response.data.shopId)
+        let shopNames = []
+        if (response.data.shopId) {
+            const ids = String(response.data.shopId).split(',')
+            ids.forEach(sid => {
+                const shop = this.shopList.find(s => String(s.id) === String(sid))
+                if (shop) shopNames.push(shop.name)
+            })
+        }
          // 详情弹窗展示，假设 GET 返回的价格也是元 (Form Consistent)
          // 但列表里的 row.payValue 是 分。
          // 为了显示统一，这里要注意单位。
@@ -784,11 +820,9 @@ export default {
          // Check migration guide: "Form submission ... price: 100.00 (Yuan)"
         this.viewForm = {
           ...response.data,
-          shopName: shop ? shop.name : '未知店铺',
-          // 详情弹窗展示，假设 GET 返回的价格也是元 (Form Consistent)
-          // 但列表里的 row.payValue 是 分。为了显示统一这里乘100。
-          price: response.data.price * 100, 
-          originalPrice: response.data.originalPrice * 100,
+          shopName: shopNames.length > 0 ? shopNames.join('，') : '未知店铺',
+          price: response.data.price, 
+          originalPrice: response.data.originalPrice,
           validityType: response.data.validityType || 1,
           useStartTime: response.data.useStartTime,
           useEndTime: response.data.useEndTime,
@@ -808,14 +842,18 @@ export default {
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
+          const submitData = { ...this.form }
+          if (Array.isArray(submitData.shopId)) {
+            submitData.shopId = submitData.shopId.join(',')
+          }
           if (this.form.id != undefined) {
-            updateProduct(this.form).then(response => {
+            updateProduct(submitData).then(response => {
               this.$modal.msgSuccess("修改成功")
               this.open = false
               this.getList()
             })
           } else {
-            addProduct(this.form).then(response => {
+            addProduct(submitData).then(response => {
               this.$modal.msgSuccess("新增成功")
               this.open = false
               this.getList()

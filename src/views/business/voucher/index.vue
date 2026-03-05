@@ -118,9 +118,6 @@
                     </div>
                     <div class="v-text">
                         <div class="v-title">{{ scope.row.title }}</div>
-                        <div class="v-shop">
-                             <i class="el-icon-shop"></i> {{ scope.row.shopName }}
-                        </div>
                     </div>
                 </div>
             </template>
@@ -410,7 +407,6 @@
            <div class="ticket-right">
                <div class="t-title">{{ viewForm.title }}</div>
                <div class="t-sub">{{ viewForm.subTitle || '暂无副标题' }}</div>
-               <div class="t-shop"><i class="el-icon-shop"></i> {{ viewForm.shopName }}</div>
            </div>
            
            <!-- 状态印章 -->
@@ -663,13 +659,7 @@ export default {
       this.loading = true
       listVoucher(this.queryParams).then(response => {
         // 将店铺ID映射为店铺名称
-        const vouchersWithShopName = response.rows.map(voucher => {
-          const shop = this.shopList.find(shop => shop.id === voucher.shopId)
-          return {
-            ...voucher,
-            shopName: shop ? shop.name : '未知店铺'
-          }
-        })
+        const vouchersWithShopName = response.rows.map(voucher => voucher)
         this.voucherList = vouchersWithShopName
         this.total = response.total
         this.loading = false
@@ -768,12 +758,7 @@ export default {
     handleView(row) {
       const id = row.id
       getVoucher(id).then(response => {
-        // 获取店铺名称
-        const shop = this.shopList.find(shop => shop.id === response.data.shopId)
-        this.viewForm = {
-          ...response.data,
-          shopName: shop ? shop.name : '未知店铺'
-        }
+        this.viewForm = { ...response.data }
         this.viewOpen = true
       })
     },

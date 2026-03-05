@@ -37,20 +37,12 @@
           <el-badge v-if="getPendingCount('comment')" :value="getPendingCount('comment')" class="tab-badge" />
         </span>
       </el-tab-pane>
-      <el-tab-pane name="voucher">
+      <el-tab-pane name="product">
         <span slot="label" class="tab-label">
-          <i class="el-icon-ticket"></i>
-          代金券审核
+          <i class="el-icon-goods"></i>
+          商品审核
           <el-tag type="danger" size="mini" class="risk-tag">高风险</el-tag>
-          <el-badge v-if="getPendingCount('voucher')" :value="getPendingCount('voucher')" class="tab-badge" />
-        </span>
-      </el-tab-pane>
-      <el-tab-pane name="group_buy">
-        <span slot="label" class="tab-label">
-          <i class="el-icon-shopping-cart-2"></i>
-          团购套餐审核
-          <el-tag type="danger" size="mini" class="risk-tag">高风险</el-tag>
-          <el-badge v-if="getPendingCount('group_buy')" :value="getPendingCount('group_buy')" class="tab-badge" />
+          <el-badge v-if="getPendingCount('product')" :value="getPendingCount('product')" class="tab-badge" />
         </span>
       </el-tab-pane>
     </el-tabs>
@@ -61,8 +53,9 @@
         <el-form-item label="状态">
           <el-select v-model="queryParams.status" placeholder="全部状态" clearable style="width: 120px" @change="handleQuery">
             <el-option label="待审核" :value="0" />
-            <el-option label="已通过" :value="1" />
-            <el-option label="已驳回" :value="2" />
+            <el-option label="审核通过" :value="1" />
+            <el-option label="人工驳回" :value="2" />
+            <el-option label="自动驳回" :value="3" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -117,7 +110,7 @@
             <span v-else class="text-gray">无头像</span>
           </template>
         </el-table-column>
-        <el-table-column label="用户信息" min-width="150">
+       <el-table-column label="用户信息" min-width="150">
           <template slot-scope="{ row }">
              <div><span class="text-bold">{{ row.nickName }}</span></div>
              <div class="text-gray" style="font-size: 12px">
@@ -144,14 +137,7 @@
             <span v-else class="text-gray">无图片</span>
           </template>
         </el-table-column>
-        <el-table-column v-if="activeTab === 'evaluation'" label="评分" width="100" align="center">
-           <template slot-scope="{ row }">
-             <div style="color: #ff9900; font-weight: bold;">
-                <i class="el-icon-star-on"></i> {{ row.score }}
-             </div>
-           </template>
-        </el-table-column>
-        <el-table-column :label="activeTab === 'blog' ? '标题/内容' : (activeTab === 'evaluation' ? '评价内容' : '评论内容')" min-width="250">
+      <el-table-column :label="activeTab === 'blog' ? '标题/内容' : (activeTab === 'evaluation' ? '评价内容' : '评论内容')" min-width="250">
           <template slot-scope="{ row }">
             <div v-if="activeTab === 'blog'">
               <div class="blog-title">{{ row.title }}</div>
@@ -181,19 +167,9 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column v-if="activeTab === 'blog'" label="数据统计" width="180">
-          <template slot-scope="{ row }">
-            <div class="stats-info">
-              <span title="点赞"><i class="el-icon-thumb"></i> {{ row.liked || 0 }}</span>
-              <span title="评论"><i class="el-icon-chat-line-square"></i> {{ row.comments || 0 }}</span>
-              <span title="收藏"><i class="el-icon-star-off"></i> {{ row.stared || 0 }}</span>
-            </div>
-          </template>
-        </el-table-column>
 
       </template>
 
-      <!-- 店铺专属列 -->
       <!-- 店铺专属列 -->
       <template v-if="activeTab === 'shop'">
         <el-table-column label="封面图" width="100" align="center">
@@ -210,29 +186,18 @@
             <span v-else class="text-gray">无封面</span>
           </template>
         </el-table-column>
-        <el-table-column prop="name" label="店铺名称" min-width="150" show-overflow-tooltip />
+       <el-table-column prop="name" label="店铺名称" min-width="150" show-overflow-tooltip />
         <el-table-column label="地址信息" min-width="200">
           <template slot-scope="{ row }">
              <div>{{ row.address }}</div>
              <div class="text-gray" style="font-size: 12px">{{ row.area }}</div>
           </template>
         </el-table-column>
-        <el-table-column label="营业信息" width="180">
-           <template slot-scope="{ row }">
-             <div><i class="el-icon-time"></i> {{ row.openHours }}</div>
-             <div class="text-gray" style="font-size: 12px">人均: ¥{{ row.avgPrice }}</div>
-           </template>
-        </el-table-column>
-        <el-table-column label="经营数据" width="150">
-           <template slot-scope="{ row }">
-             <div><i class="el-icon-star-on" style="color: #ff9900"></i> {{ row.score }}分</div>
-             <div class="text-gray" style="font-size: 12px">销量: {{ row.sold }}</div>
-           </template>
-        </el-table-column>
+
       </template>
 
-      <!-- 代金券/团购专属列 -->
-      <template v-if="activeTab === 'voucher' || activeTab === 'group_buy'">
+      <!-- 商品专属列 -->
+      <template v-if="activeTab === 'product'">
         <el-table-column label="图片" width="100" align="center">
           <template slot-scope="{ row }">
             <el-image 
@@ -247,7 +212,7 @@
             <span v-else class="text-gray">无图片</span>
           </template>
         </el-table-column>
-        <el-table-column prop="title" label="名称" min-width="150" show-overflow-tooltip>
+       <el-table-column prop="title" label="名称" min-width="150" show-overflow-tooltip>
            <template slot-scope="{ row }">
              <div>
                 <el-tag v-if="row.type === 1" type="danger" size="mini" effect="dark">秒杀</el-tag>
@@ -256,21 +221,6 @@
              </div>
              <div class="text-gray" style="font-size: 12px">{{ row.subTitle }}</div>
            </template>
-        </el-table-column>
-        <el-table-column prop="shopName" label="所属店铺" min-width="150" show-overflow-tooltip />
-        <el-table-column label="价格信息" width="180">
-          <template slot-scope="{ row }">
-            <div class="price-info">
-              <div class="price-row">
-                <span class="label">原价：</span>
-                <span class="original-price">¥{{ row.actualValue }}</span>
-              </div>
-              <div class="price-row">
-                <span class="label">售价：</span>
-                <span class="sale-price">¥{{ row.payValue }}</span>
-              </div>
-            </div>
-          </template>
         </el-table-column>
       </template>
 
@@ -314,12 +264,15 @@
               {{ getStatusText(currentItem.status) }}
             </el-tag>
           </el-descriptions-item>
+          <el-descriptions-item v-if="currentItem.status === 2 || currentItem.status === 3" label="驳回原因">
+            <span class="text-danger">{{ currentItem.reason }}</span>
+          </el-descriptions-item>
         </el-descriptions>
 
         <!-- User类型详情 -->
         <div v-if="activeTab === 'user'" class="detail-section">
           <div class="section-title">用户资料</div>
-          <div class="user-profile-card">
+           <div class="user-profile-card">
              <el-image 
                v-if="currentItem.icon"
                :src="getFileUrl(currentItem.icon)" 
@@ -343,59 +296,39 @@
                    <span class="label">简介：</span>
                    <span class="value">{{ currentItem.introduce || '暂无简介' }}</span>
                 </div>
-             </div>
-          </div>
-          
-          <div v-if="currentItem.backgroundImage" class="detail-block mt-20">
-             <div class="section-title">背景图</div>
-             <el-image 
-               :src="getFileUrl(currentItem.backgroundImage)" 
-               :preview-src-list="[getFileUrl(currentItem.backgroundImage)]"
-               fit="cover" 
-               class="bg-image-preview"
-               style="width: 100%; height: 200px; border-radius: 8px;"
-             >
-               <div slot="error" class="image-slot"><i class="el-icon-picture-outline"></i></div>
-             </el-image>
-          </div>
+              </div>
+           </div>
+           
+           <div v-if="currentItem.backgroundImage" class="detail-block mt-20">
+              <div class="section-title">背景图</div>
+              <el-image 
+                :src="getFileUrl(currentItem.backgroundImage)" 
+                :preview-src-list="[getFileUrl(currentItem.backgroundImage)]"
+                fit="cover" 
+                class="bg-image-preview"
+                style="width: 100%; height: 200px; border-radius: 8px;"
+              >
+                <div slot="error" class="image-slot"><i class="el-icon-picture-outline"></i></div>
+              </el-image>
+           </div>
         </div>
 
-        <!-- Voucher/GroupBuy类型详情：券面信息 -->
-        <div v-if="activeTab === 'voucher' || activeTab === 'group_buy'" class="detail-section">
-          <div class="section-title">券面信息预览</div>
+        <!-- Product类型详情：券面信息 -->
+        <div v-if="activeTab === 'product'" class="detail-section">
+          <div class="section-title">商品预览</div>
           <div class="voucher-card">
              <div class="card-header">
-               <span class="type-tag" :class="{ 'seckill': currentItem.type === 1 }">
+               <!-- <span class="type-tag" :class="{ 'seckill': currentItem.type === 1 }">
                    {{ currentItem.type === 1 ? '秒杀' : (activeTab === 'voucher' ? '代金券' : '团购') }}
-               </span>
-               <span class="card-name">{{ currentItem.title }}</span>
+               </span> -->
+              <span class="card-name">{{ currentItem.title }}</span>
              </div>
              <div class="card-body">
-               <div class="price-box">
-                 <div class="orig-price">¥{{ currentItem.actualValue }}</div>
-                 <div class="arrow">↓</div>
-                 <div class="sale-price">¥{{ currentItem.payValue }}</div>
-                 <div class="discount-tag">{{ calculateDiscount(currentItem.payValue, currentItem.actualValue) }}</div>
-               </div>
                
                <div class="info-list">
-                 <div class="info-item">
-                     <i class="el-icon-s-shop"></i> 店铺：{{ currentItem.shopName }}
-                 </div>
-                 <div class="info-item">
-                     <i class="el-icon-date"></i> 有效期：
-                     <span v-if="currentItem.validityType === 1">
-                         {{ currentItem.useStartTime }} 至 {{ currentItem.useEndTime }}
-                     </span>
-                     <span v-else-if="currentItem.validityType === 2">
-                         购买后 {{ currentItem.validDays }} 天内有效
-                     </span>
-                     <span v-else>未知</span>
-                 </div>
-                 <div class="info-item" v-if="currentItem.rules">
-                     <i class="el-icon-info"></i> 使用规则：{{ currentItem.rules }}
-                 </div>
-               </div>
+
+                 
+              </div>
              </div>
           </div>
           
@@ -420,18 +353,8 @@
           <div class="section-title">店铺信息</div>
           <el-descriptions :column="2" border size="small" class="mb-20">
             <el-descriptions-item label="店铺名称">{{ currentItem.name }}</el-descriptions-item>
-            <el-descriptions-item label="所属商圈">{{ currentItem.area }}</el-descriptions-item>
             <el-descriptions-item label="详细地址" :span="2">{{ currentItem.address }}</el-descriptions-item>
-            <el-descriptions-item label="营业时间">{{ currentItem.openHours }}</el-descriptions-item>
-            <el-descriptions-item label="人均价格">¥{{ currentItem.avgPrice }}</el-descriptions-item>
-            <el-descriptions-item label="评分">
-               <span style="color: #ff9900; font-weight: bold">{{ currentItem.score }}</span> 分
-            </el-descriptions-item>
-            <el-descriptions-item label="销量">{{ currentItem.sold }}</el-descriptions-item>
-            <el-descriptions-item label="经纬度">
-               {{ currentItem.x }}, {{ currentItem.y }}
-            </el-descriptions-item>
-          </el-descriptions>
+         </el-descriptions>
 
           <div v-if="currentItem.images" class="detail-block">
              <div class="section-title">店铺环境图</div>
@@ -470,9 +393,7 @@
                 <span class="meta-item"><i class="el-icon-user"></i> {{ currentItem.submitterName }}</span>
                 <span class="meta-item"><i class="el-icon-time"></i> {{ parseTime(currentItem.createTime) }}</span>
                 <div class="meta-stats">
-                  <span title="点赞"><i class="el-icon-thumb"></i> {{ currentItem.liked || 0 }}</span>
-                  <span title="评论"><i class="el-icon-chat-line-square"></i> {{ currentItem.comments || 0 }}</span>
-                  <span title="收藏"><i class="el-icon-star-off"></i> {{ currentItem.stared || 0 }}</span>
+                  
                 </div>
              </div>
 
@@ -508,17 +429,6 @@
                 {{ currentItem.content }}
             </div>
 
-            <div v-if="activeTab === 'evaluation'" class="detail-block mt-20">
-               <div class="section-title">评分</div>
-               <el-rate
-                  v-model="currentItem.score"
-                  disabled
-                  show-score
-                  text-color="#ff9900"
-                  score-template="{value}分">
-               </el-rate>
-            </div>
-            
             <div v-if="currentItem.images" class="detail-block mt-20">
                <div class="section-title">图片</div>
                <div class="blog-images-grid">
@@ -534,7 +444,7 @@
             </div>
 
             <!-- 目标内容展示 -->
-            <div v-if="currentItem.targetTitle || currentItem.targetImages" class="detail-block mt-20" style="background: #f8f9fa; padding: 10px; border-radius: 4px;">
+            <div v-if="currentItem.targetTitle" class="detail-block mt-20" style="background: #f8f9fa; padding: 10px; border-radius: 4px;">
                <div class="section-title" style="margin-bottom: 10px;">关联目标</div>
                <div v-if="currentItem.targetTitle" class="mb-10">
                    <span style="font-weight: bold; color: #606266;">标题：</span>{{ currentItem.targetTitle }}
@@ -601,7 +511,7 @@ export default {
   name: 'AuditCenter',
   data() {
     return {
-      activeTab: 'user',
+      activeTab: 'product',
       loading: false,
       btnLoading: false,
       dialogVisible: false,
@@ -633,8 +543,7 @@ export default {
         blog: '文章',
         shop: '店铺',
         comment: '评论',
-        voucher: '代金券',
-        group_buy: '团购',
+        product: '商品',
         evaluation: '评价'
       }
     }
@@ -648,18 +557,16 @@ export default {
   },
   methods: {
     getTypeName(type) {
-      if (type === 'group_buy') return '团购'
-      if (type === 'evaluation') return '评价'
       return this.typeMap[type] || ''
     },
     
     getStatusType(status) {
-      const map = { 0: 'warning', 1: 'success', 2: 'danger' }
+      const map = { 0: 'warning', 1: 'success', 2: 'danger', 3: 'info' }
       return map[status] || 'info'
     },
     
     getStatusText(status) {
-      const map = { 0: '待审核', 1: '已通过', 2: '已驳回' }
+      const map = { 0: '待审核', 1: '审核通过', 2: '人工驳回', 3: '自动驳回' }
       return map[status] || '未知'
     },
     
@@ -713,9 +620,8 @@ export default {
           user: 1,
           shop: 2,
           blog: 3,
-          voucher: 4,
+          product: 4,
           comment: 5,
-          group_buy: 6,
           evaluation: 7
       }
       
@@ -846,11 +752,11 @@ export default {
             oldNickname: 'OldName',
             newNickname: 'NewName_' + i
           }))
-        } else if (type === 'voucher' || type === 'group_buy') {
+        } else if (type === 'product') {
           const original = 100
           const sale = i % 2 === 0 ? 80 : 5
           mockData.push(Object.assign(base, {
-            name: (type === 'voucher' ? '代金券' : '团购') + '_' + i,
+            name: '商品' + '_' + i,
             originalPrice: original,
             salePrice: sale,
             isHighRisk: sale < (original * 0.1),
