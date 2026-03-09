@@ -21,14 +21,15 @@
         </el-form-item>
         <el-form-item label="来源" prop="sourceType">
             <el-select v-model="queryParams.sourceType" placeholder="请选择来源" clearable style="width: 150px" @change="handleQuery">
-            <el-option label="博客" value="1" />
+            <el-option label="商品" value="4" />
             <el-option label="店铺" value="2" />
             </el-select>
         </el-form-item>
         <el-form-item label="状态" prop="status">
             <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 150px" @change="handleQuery">
             <el-option label="正常" value="0" />
-            <el-option label="禁用" value="1" />
+            <el-option label="被举报" value="1" />
+            <el-option label="禁止查看" value="2" />
             </el-select>
         </el-form-item>
         <el-form-item class="search-btns">
@@ -45,8 +46,8 @@
             icon="el-icon-plus"
             size="mini"
             @click="handleAdd"
-            v-hasPermi="['comment:comment:add']"
-            >新增评论</el-button>
+            v-hasPermi="['review:review:add']"
+            >新增评价</el-button>
         </el-col>
         <el-col :span="1.5">
             <el-button
@@ -56,7 +57,7 @@
             size="mini"
             :disabled="single"
             @click="handleUpdate"
-            v-hasPermi="['comment:comment:edit']"
+            v-hasPermi="['review:review:edit']"
             >修改</el-button>
         </el-col>
         <el-col :span="1.5">
@@ -67,7 +68,7 @@
             size="mini"
             :disabled="multiple"
             @click="handleDelete"
-            v-hasPermi="['comment:comment:remove']"
+            v-hasPermi="['review:review:remove']"
             >删除</el-button>
         </el-col>
         <el-col :span="1.5">
@@ -77,31 +78,35 @@
             icon="el-icon-download"
             size="mini"
             @click="handleExport"
-            v-hasPermi="['comment:comment:export']"
+            v-hasPermi="['review:review:export']"
             >导出</el-button>
         </el-col>
-        <el-col :span="1.5">
-            <el-button
-            type="primary"
-            plain
-            icon="el-icon-magic-stick"
+        <div class="right-actions">
+           <el-button
+            type="text"
+            icon="el-icon-s-promotion"
             size="mini"
-            @click="handleAiCreate"
-            >AI生成</el-button>
-        </el-col>
-
-        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+            @click="handleAllPublish"
+          >全量发布</el-button>
+          <el-button
+            type="text"
+            icon="el-icon-s-promotion"
+            size="mini"
+            @click="handlePublish"
+          >发布选中</el-button>
+          <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+        </div>
         </el-row>
     </el-card>
 
     <el-card class="box-card" shadow="never">
-        <el-table v-loading="loading" :data="commentList" @selection-change="handleSelectionChange" border stripe :header-cell-style="{background:'#f5f7fa',color:'#606266'}">
+        <el-table v-loading="loading" :data="reviewList" @selection-change="handleSelectionChange" border stripe :header-cell-style="{background:'#f5f7fa',color:'#606266'}">
         <el-table-column type="selection" width="55" align="center" />
         <el-table-column label="来源信息" min-width="200" show-overflow-tooltip>
              <template slot-scope="scope">
                 <div class="source-info">
                    <div class="source-line">
-                       <el-tag size="mini" :type="scope.row.sourceType === '1' ? 'primary' : 'success'" effect="plain" class="type-tag">
+                       <el-tag size="mini" :type="Number(scope.row.sourceType) === 4 ? 'primary' : 'success'" effect="plain" class="type-tag">
                            {{ getSourceTypeText(scope.row.sourceType) }}
                        </el-tag>
                        <span class="source-name">{{ scope.row.sourceName || '--' }}</span>
@@ -112,22 +117,40 @@
                 </div>
             </template>
         </el-table-column>
-        <el-table-column label="回复内容" min-width="300" prop="content">
+        <el-table-column label="评价内容" min-width="300" prop="content">
              <template slot-scope="scope">
-                 <div class="comment-content-cell" v-html="scope.row.content"></div>
+                 <div class="review-content-cell" v-html="scope.row.content"></div>
              </template>
         </el-table-column>
-        <el-table-column label="点赞数" align="center" prop="liked" width="100">
+        <el-table-column label="评分" align="center" width="220" show-overflow-tooltip>
+             <template slot-scope="scope">
+                 <div>总体评分: <el-rate v-model="scope.row.score" disabled show-score text-color="#ff9900"></el-rate></div>
+                 <div v-if="scope.row.serviceScore">服务评分: <el-rate v-model="scope.row.serviceScore" disabled></el-rate></div>
+                 <div v-if="scope.row.tasteScore">口味评分: <el-rate v-model="scope.row.tasteScore" disabled></el-rate></div>
+                 <div v-if="scope.row.envScore">环境评分: <el-rate v-model="scope.row.envScore" disabled></el-rate></div>
+             </template>
+        </el-table-column>
+        <el-table-column label="点赞数" align="center" prop="liked" width="80">
              <template slot-scope="scope">
                  <span v-if="scope.row.liked > 0" class="liked-count"><i class="el-icon-thumb"></i> {{ scope.row.liked }}</span>
                  <span v-else class="text-muted">-</span>
              </template>
         </el-table-column>
+        <el-table-column label="其他数" align="center" width="80">
+            <template slot-scope="scope">
+                <div v-if="scope.row.replyCount > 0" class="text-muted">回复: {{ scope.row.replyCount }}</div>
+                <div v-if="scope.row.stared > 0" class="text-muted">收藏: {{ scope.row.stared }}</div>
+                <span v-if="scope.row.replyCount === 0 && scope.row.stared === 0" class="text-muted">-</span>
+            </template>
+        </el-table-column>
         <el-table-column label="状态" align="center" prop="status" width="100">
             <template slot-scope="scope">
-             <el-tag effect="dark" size="small" :type="scope.row.status === '0' ? 'success' : 'danger'">
+             <el-tag effect="dark" size="small" :type="scope.row.status === 0 ? 'success' : (scope.row.status === 1 ? 'warning' : 'danger')">
                 {{ getStatusText(scope.row.status) }}
             </el-tag>
+            <div v-if="scope.row.status !== 0 && scope.row.rejectReason" style="font-size: 12px; color: #f56c6c; margin-top: 5px;">
+                拒绝原因: {{ scope.row.rejectReason }}
+            </div>
             </template>
         </el-table-column>
         <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
@@ -137,14 +160,14 @@
                 type="text"
                 icon="el-icon-view"
                 @click="handleDetail(scope.row)"
-                v-hasPermi="['comment:comment:query']"
+                v-hasPermi="['review:review:query']"
             >详情</el-button>
             <el-button
                 size="mini"
                 type="text"
                 icon="el-icon-edit"
                 @click="handleUpdate(scope.row)"
-                v-hasPermi="['comment:comment:edit']"
+                v-hasPermi="['review:review:edit']"
             >修改</el-button>
             <el-button
                 size="mini"
@@ -152,7 +175,7 @@
                 icon="el-icon-delete"
                 class="text-danger"
                 @click="handleDelete(scope.row)"
-                v-hasPermi="['comment:comment:remove']"
+                v-hasPermi="['review:review:remove']"
             >删除</el-button>
             </template>
         </el-table-column>
@@ -167,8 +190,8 @@
         />
     </el-card>
 
-    <!-- 添加或修改评论对话框 -->
-    <el-dialog :title="title" :visible.sync="open" width="600px" append-to-body custom-class="comment-edit-dialog">
+    <!-- 添加或修改评价对话框 -->
+    <el-dialog :title="title" :visible.sync="open" width="600px" append-to-body custom-class="review-edit-dialog">
       <el-form ref="form" :model="form" :rules="rules" label-width="80px" class="edit-form">
         <el-form-item label="用户" prop="userId">
           <el-select v-model="form.userId" placeholder="请选择用户" style="width: 100%" filterable>
@@ -184,8 +207,8 @@
              <el-col :span="12">
                  <el-form-item label="来源类型" prop="sourceType">
                 <el-select v-model="form.sourceType" placeholder="请选择来源类型" style="width: 100%">
-                    <el-option label="博客" value="1" />
-                    <el-option label="店铺" value="2" />
+                    <el-option label="商品" :value="4" />
+                    <el-option label="店铺" :value="2" />
                 </el-select>
                 </el-form-item>
              </el-col>
@@ -196,17 +219,67 @@
              </el-col>
         </el-row>
         
-        <el-form-item label="回复内容">
+        <el-form-item label="评价内容">
           <editor v-model="form.content" :min-height="150"/>
         </el-form-item>
-        <el-form-item label="图片" prop="images">
-          <image-upload v-model="form.images" :limit="9" :file-size="2" />
+        
+        <el-row>
+             <el-col :span="12">
+                 <el-form-item label="店铺ID" prop="shopId">
+                <el-input v-model="form.shopId" placeholder="请输入店铺ID" />
+                </el-form-item>
+             </el-col>
+             <el-col :span="12">
+                 <el-form-item label="订单ID" prop="orderId">
+                <el-input v-model="form.orderId" placeholder="请输入订单ID" />
+                </el-form-item>
+             </el-col>
+        </el-row>
+        
+        <el-row>
+             <el-col :span="12">
+                 <el-form-item label="总体评分" prop="score">
+                     <el-rate v-model="form.score" style="margin-top: 10px;"></el-rate>
+                 </el-form-item>
+             </el-col>
+             <el-col :span="12">
+                 <el-form-item label="是否匿名" prop="isAnonymous">
+                    <el-switch v-model="form.isAnonymous" active-text="是" inactive-text="否"></el-switch>
+                 </el-form-item>
+             </el-col>
+        </el-row>
+        
+        <el-form-item v-if="Number(form.sourceType) === 2 || Number(form.sourceType) === 4" label="服务评分" prop="serviceScore">
+            <el-rate v-model="form.serviceScore" style="margin-top: 10px;"></el-rate>
         </el-form-item>
+        
+        <el-row v-if="Number(form.sourceType) === 2 || Number(form.sourceType) === 4">
+             <el-col :span="12">
+                 <el-form-item label="口味评分" prop="tasteScore">
+                     <el-rate v-model="form.tasteScore" style="margin-top: 10px;"></el-rate>
+                 </el-form-item>
+             </el-col>
+             <el-col :span="12">
+                 <el-form-item label="环境评分" prop="envScore">
+                     <el-rate v-model="form.envScore" style="margin-top: 10px;"></el-rate>
+                 </el-form-item>
+             </el-col>
+        </el-row>
+        
+        <el-form-item label="图片链接" prop="images">
+            <image-upload v-model="form.images" :limit="9" :file-size="2" />
+        </el-form-item>
+        
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
-             <el-radio label="0">正常</el-radio>
-             <el-radio label="1">禁用</el-radio>
+             <el-radio :label="0">正常</el-radio>
+             <el-radio :label="1">被举报</el-radio>
+             <el-radio :label="2">禁止查看</el-radio>
           </el-radio-group>
+        </el-form-item>
+        
+        <el-form-item v-if="form.status !== 0" label="拒绝原因" prop="rejectReason">
+            <el-input type="textarea" v-model="form.rejectReason" placeholder="请输入拒绝原因" />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -215,44 +288,53 @@
       </div>
     </el-dialog>
 
-    <!-- 评论详情对话框 -->
-    <el-dialog title="评论详情" :visible.sync="detailOpen" width="700px" append-to-body custom-class="comment-detail-dialog">
+    <!-- 评价详情对话框 -->
+    <el-dialog title="评价详情" :visible.sync="detailOpen" width="700px" append-to-body custom-class="review-detail-dialog">
        <div class="detail-container">
            <div class="user-meta">
                <div class="user-avatar-circle">
                    {{ (detailForm.userName || 'U').charAt(0).toUpperCase() }}
                </div>
                <div class="meta-info">
-                   <div class="u-name">{{ detailForm.userName || '未知用户' }}</div>
+                   <div class="u-name">{{ detailForm.userName || '未知用户' }} <el-tag v-if="detailForm.isAnonymous" size="mini" type="info">匿名</el-tag></div>
                    <div class="c-time">{{ detailForm.createTime }}</div>
                </div>
                <div class="status-badge">
-                   <el-tag :type="detailForm.status === '0' ? 'success' : 'danger'">
+                   <el-tag :type="detailForm.status === 0 ? 'success' : (detailForm.status === 1 ? 'warning' : 'danger')">
                     {{ getStatusText(detailForm.status) }}
                    </el-tag>
                </div>
            </div>
            
            <div class="source-ref">
-               <span class="label">回复于:</span>
-               <el-tag size="mini" :type="detailForm.sourceType === '1' ? 'primary' : 'success'" effect="plain">
+               <span class="label">评价于:</span>
+               <el-tag size="mini" :type="Number(detailForm.sourceType) === 4 ? 'primary' : 'success'" effect="plain">
                     {{ getSourceTypeText(detailForm.sourceType) }}
                </el-tag>
                <span class="ref-name">{{ detailForm.sourceName }}</span>
            </div>
 
-           <div class="comment-body">
+           <div class="review-body">
                 <div class="contenter-html" v-html="detailForm.content"></div>
            </div>
 
-           <div class="comment-images" v-if="detailForm.images && detailForm.images.length > 0">
+           <div class="review-scores" style="margin-bottom: 25px;">
+               <div class="score-grid" style="display: flex; flex-wrap: wrap; gap: 20px;">
+                   <div>总体评分 <el-rate v-model="detailForm.score" disabled></el-rate></div>
+                   <div v-if="detailForm.serviceScore">服务评分 <el-rate v-model="detailForm.serviceScore" disabled></el-rate></div>
+                   <div v-if="detailForm.tasteScore">口味评分 <el-rate v-model="detailForm.tasteScore" disabled></el-rate></div>
+                   <div v-if="detailForm.envScore">环境评分 <el-rate v-model="detailForm.envScore" disabled></el-rate></div>
+               </div>
+           </div>
+
+           <div class="review-images" v-if="detailForm.images && detailForm.images.length > 0">
                <div class="img-label">图片附件</div>
                <div class="img-grid">
                     <el-image
-                    v-for="(image, index) in detailForm.images.split(',')"
+                    v-for="(image, index) in detailForm.images.split(',').filter(item => item)"
                     :key="index"
                     :src="image"
-                    :preview-src-list="detailForm.images.split(',')"
+                    :preview-src-list="detailForm.images.split(',').filter(item => item)"
                     class="c-img"
                     fit="cover"
                     ></el-image>
@@ -261,6 +343,12 @@
 
            <div class="action-stats">
                <div class="stat"><i class="el-icon-thumb"></i> 点赞 {{ detailForm.liked || 0 }}</div>
+               <div class="stat" style="margin-left: 15px;"><i class="el-icon-chat-dot-round"></i> 回复 {{ detailForm.replyCount || 0 }}</div>
+               <div class="stat" style="margin-left: 15px;"><i class="el-icon-star-off"></i> 收藏 {{ detailForm.stared || 0 }}</div>
+           </div>
+           
+           <div class="reject-reason" v-if="detailForm.status !== 0 && detailForm.rejectReason" style="margin-top: 15px; padding: 10px; background-color: #fef0f0; border-radius: 4px; color: #f56c6c;">
+                <strong>拒绝原因：</strong>{{ detailForm.rejectReason }}
            </div>
        </div>
       <div slot="footer" class="dialog-footer">
@@ -271,13 +359,13 @@
 </template>
 
 <script>
-import { listComment, getComment, delComment, addComment, updateComment,aiCreateComment } from "@/api/comment/comment"
+import { listReview, getReview, delReview, addReview, updateReview, aiCreateReview, publishReview, publishAllReview } from "@/api/review/review"
 import {listUser, userList} from "@/api/user/user"
-import {blogList, listBlog} from "@/api/blog/blog"
 import { shopList } from "@/api/shop/shop"
+import { listProduct, getProduct } from "@/api/product"
 
 export default {
-  name: "Comment",
+  name: "Review",
   data() {
     return {
       // 遮罩层
@@ -292,12 +380,12 @@ export default {
       showSearch: true,
       // 总条数
       total: 0,
-      // 评论表格数据
-      commentList: [],
+      // 评价表格数据
+      reviewList: [],
       // 用户列表
       userList: [],
-      // 博客列表
-      blogList: [],
+      // 商品列表
+      productList: [],
       // 店铺列表
       shopList: [],
       // 弹出层标题
@@ -329,11 +417,11 @@ export default {
         sourceId: [
           { required: true, message: "来源id不能为空", trigger: "blur" }
         ],
-        parentId: [
-          { required: true, message: "关联的1级评论id不能为空", trigger: "blur" }
-        ],
         content: [
           { required: true, message: "回复的内容不能为空", trigger: "blur" }
+        ],
+        score: [
+          { required: true, message: "评分不能为空", trigger: "change" }
         ],
         status: [
           { required: true, message: "状态不能为空", trigger: "change" }
@@ -342,7 +430,7 @@ export default {
     }
   },
   created() {
-    // 先加载用户列表，再加载评论列表
+    // 先加载用户列表，再加载评价列表
     this.loadUserList()
   },
   methods: {
@@ -351,7 +439,7 @@ export default {
       try {
         const response = await userList()
         this.userList = response.data || []
-        // 用户列表加载完成后，再加载评论列表
+        // 用户列表加载完成后，再加载评价列表
         this.getList()
       } catch (error) {
         console.error('加载用户列表失败:', error)
@@ -363,22 +451,23 @@ export default {
     /** 获取来源类型文本 */
     getSourceTypeText(sourceType) {
       const typeMap = {
-        '1': '博客',
-        '2': '店铺'
+        4: '商品',
+        2: '店铺'
       }
-      return typeMap[sourceType] || '未知'
+      return typeMap[Number(sourceType)] || '未知'
     },
 
     /** 获取状态文本 */
     getStatusText(status) {
       const statusMap = {
-        '0': '正常',
-        '1': '禁用'
+        0: '正常',
+        1: '被举报',
+        2: '禁止查看'
       }
       return statusMap[status] || '未知'
     },
 
-    /** 查询评论列表 */
+    /** 查询评价列表 */
     getList() {
       this.loading = true
 
@@ -398,21 +487,21 @@ export default {
         }
       })
 
-      listComment(queryData).then(response => {
+      listReview(queryData).then(response => {
         if (response.rows && response.rows.length > 0) {
-          // 先设置评论列表基础数据
-          this.commentList = response.rows
+          // 先设置评价列表基础数据
+          this.reviewList = response.rows
           this.total = response.total
 
           // 然后加载关联数据并更新显示
           this.loadRelatedData()
         } else {
-          this.commentList = []
+          this.reviewList = []
           this.total = 0
           this.loading = false
         }
       }).catch(error => {
-        console.error('获取评论列表失败:', error)
+        console.error('获取评价列表失败:', error)
         this.loading = false
       })
     },
@@ -420,32 +509,53 @@ export default {
     /** 加载关联数据并更新显示 */
     async loadRelatedData() {
       try {
-        // 并行加载博客和店铺列表
-        const [blogsResponse, shopsResponse] = await Promise.all([
-          blogList(),
+        const [productsResponse, shopsResponse] = await Promise.all([
+          listProduct({ pageNum: 1, pageSize: 2000 }),
           shopList()
         ])
 
-        this.blogList = blogsResponse.data || []
+        this.productList = productsResponse.rows || []
         this.shopList = shopsResponse.data || []
 
-        // 更新评论列表的显示数据
-        this.commentList = this.commentList.map(item => {
-          // 设置用户名称
-          const user = this.userList.find(user => user.id == item.userId)
+        const productMap = new Map(this.productList.map(product => [String(product.id), product]))
+        const shopMap = new Map(this.shopList.map(shop => [String(shop.id), shop]))
+
+        const missingProductIds = [...new Set(
+          this.reviewList
+                        .filter(item => Number(item.sourceType) !== 2)
+            .map(item => String(item.sourceId || ""))
+            .filter(id => id && !productMap.has(id))
+        )]
+
+        if (missingProductIds.length > 0) {
+          const missingProducts = await Promise.all(
+            missingProductIds.map(id => getProduct(id).then(res => res.data).catch(() => null))
+          )
+          missingProducts.filter(Boolean).forEach(product => {
+            if (product && product.id != null) {
+              productMap.set(String(product.id), product)
+            }
+          })
+        }
+
+        this.reviewList = this.reviewList.map(item => {
+          const sourceId = String(item.sourceId || "")
+          const sourceType = Number(item.sourceType)
+          const product = productMap.get(sourceId)
+          const shop = shopMap.get(sourceId)
+
+          const user = this.userList.find(user => String(user.id) === String(item.userId))
           item.userName = user ? user.nickName : `用户${item.userId}`
 
-          // 设置来源名称 - 严格按照你的逻辑
-          if (item.sourceType == '1') {
-            // 博客评论 - 从博客列表查询
-            const blog = this.blogList.find(blog => blog.id == item.sourceId)
-            item.sourceName = blog ? blog.title : `博客${item.sourceId}`
-          } else if (item.sourceType == '2') {
-            // 店铺评论 - 从店铺列表查询
-            const shop = this.shopList.find(shop => shop.id == item.sourceId)
-            item.sourceName = shop ? shop.name : `店铺${item.sourceId}`
+          if (sourceType === 4 || (product && !shop)) {
+            const productName = product && (product.name || product.title || product.productName)
+            item.sourceType = 4
+            item.sourceName = productName || item.sourceName || `商品${item.sourceId}`
+          } else if (sourceType === 2 || shop) {
+            item.sourceType = 2
+            item.sourceName = (shop && shop.name) || item.sourceName || `店铺${item.sourceId}`
           } else {
-            item.sourceName = `未知类型${item.sourceId}`
+            item.sourceName = item.sourceName || `未知类型${item.sourceId}`
           }
 
           return item
@@ -457,7 +567,6 @@ export default {
         this.loading = false
       }
     },
-
     /** 查看详情按钮操作 */
     handleDetail(row) {
       this.detailForm = {
@@ -477,16 +586,23 @@ export default {
       this.form = {
         id: null,
         userId: null,
+        shopId: null,
+        orderId: null,
         sourceType: null,
         sourceId: null,
-        parentId: null,
-        answerId: null,
         content: null,
         images: null,
-        liked: null,
-        status: null,
-        createTime: null,
-        updateTime: null
+        liked: 0,
+        replyCount: 0,
+        stared: 0,
+        status: 0,
+        score: null,
+        serviceScore: null,
+        tasteScore: null,
+        envScore: null,
+        isAnonymous: false,
+        rejectReason: null,
+        createTime: null
       }
       this.resetForm("form")
     },
@@ -521,17 +637,17 @@ export default {
     handleAdd() {
       this.reset()
       this.open = true
-      this.title = "添加评论"
+      this.title = "添加评价"
     },
 
     /** 修改按钮操作 */
     handleUpdate(row) {
       this.reset()
       const id = row.id || this.ids
-      getComment(id).then(response => {
+      getReview(id).then(response => {
         this.form = response.data
         this.open = true
-        this.title = "修改评论"
+        this.title = "修改评价"
       })
     },
 
@@ -540,13 +656,13 @@ export default {
       this.$refs["form"].validate(valid => {
         if (valid) {
           if (this.form.id != null) {
-            updateComment(this.form).then(response => {
+            updateReview(this.form).then(response => {
               this.$modal.msgSuccess("修改成功")
               this.open = false
               this.getList()
             })
           } else {
-            addComment(this.form).then(response => {
+            addReview(this.form).then(response => {
               this.$modal.msgSuccess("新增成功")
               this.open = false
               this.getList()
@@ -559,8 +675,8 @@ export default {
     /** 删除按钮操作 */
     handleDelete(row) {
       const ids = row.id || this.ids
-      this.$modal.confirm('是否确认删除评论编号为"' + ids + '"的数据项？').then(function() {
-        return delComment(ids)
+      this.$modal.confirm('是否确认删除评价编号为"' + ids + '"的数据项？').then(function() {
+        return delReview(ids)
       }).then(() => {
         this.getList()
         this.$modal.msgSuccess("删除成功")
@@ -569,20 +685,35 @@ export default {
 
     /** 导出按钮操作 */
     handleExport() {
-      this.download('comment/comment/export', {
+      this.download('review/review/export', {
         ...this.queryParams
-      }, `comment_${new Date().getTime()}.xlsx`)
+      }, `review_${new Date().getTime()}.xlsx`)
     },
     handleAiCreate(){
-      aiCreateComment().then(response => {
+      aiCreateReview().then(response => {
         this.$modal.msgSuccess("创建成功")
         this.getList()
       })
+    },
+    /** 全量发布 */
+    handleAllPublish(){
+      publishAllReview().then(response => {
+        response.msg && this.$modal.msgSuccess(response.msg)
+      }).catch(() => {
+      })
+    },
+    /** 发布选中 */
+    handlePublish(row) {
+      const ids = row.id || this.ids
+      this.$modal.confirm('是否确认发布评价？').then(function() {
+        return publishReview(ids)
+      }).then(() => {
+        this.getList()
+        this.$modal.msgSuccess("发布成功")
+      }).catch(() => {})
     }
   }
 }
-</script>
-
 </script>
 
 <style scoped lang="scss">
@@ -636,7 +767,7 @@ export default {
     }
 }
 
-.comment-content-cell {
+.review-content-cell {
     font-size: 13px;
     color: #606266;
     line-height: 1.5;
@@ -694,7 +825,7 @@ export default {
     .ref-name { font-size: 14px; font-weight: 500; color: #303133; margin-left: 8px; }
 }
 
-.comment-body {
+.review-body {
     margin-bottom: 25px;
     .contenter-html {
         font-size: 14px;
@@ -703,7 +834,7 @@ export default {
     }
 }
 
-.comment-images {
+.review-images {
     margin-bottom: 25px;
     .img-label { font-size: 13px; color: #909399; margin-bottom: 10px; }
     .img-grid {

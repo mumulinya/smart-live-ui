@@ -99,6 +99,12 @@
             size="mini"
             @click="handleAllPublish"
           >全量发布</el-button>
+          <el-button
+            type="text"
+            icon="el-icon-s-promotion"
+            size="mini"
+            @click="handlePublish"
+          >发布选中</el-button>
           <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
         </div>
       </el-row>
