@@ -160,7 +160,8 @@
         </el-table-column>
         <el-table-column label="库存" align="center" prop="stock" width="100">
             <template slot-scope="scope">
-            <span class="stock-text">{{ scope.row.stock || 0 }}</span>
+            <span v-if="scope.row.activityType === 1" class="stock-text">{{ scope.row.stock || 0 }}</span>
+            <span v-else class="text-muted">-</span>
             </template>
         </el-table-column>
         <el-table-column label="有效期 / 抢购时间" align="center" min-width="240">
@@ -183,11 +184,11 @@
         </el-table-column>
         <el-table-column label="状态" align="center" prop="status" width="100">
             <template slot-scope="scope">
-            <el-tag
-                :type="scope.row.status === 1 ? 'success' : (scope.row.status === 2 ? 'info' : (scope.row.status === 0 ? 'warning' : 'danger'))"
-            >
-                {{ scope.row.status === 1 ? '上架' : (scope.row.status === 2 ? '下架' : (scope.row.status === 0 ? '未审核' : '过期')) }}
-            </el-tag>
+                <el-tag v-if="scope.row.status === 0" type="warning">未审核</el-tag>
+                <el-tag v-else-if="scope.row.status === 1" type="success">已上架</el-tag>
+                <el-tag v-else-if="scope.row.status === 2" type="info">已下架</el-tag>
+                <el-tag v-else-if="scope.row.status === 3" type="danger">审核失败</el-tag>
+                <el-tag v-else-if="scope.row.status === 4" type="info">已过期</el-tag>
             </template>
         </el-table-column>
         <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
@@ -206,7 +207,7 @@
                 v-hasPermi="['marketing:voucher:edit']"
             >修改</el-button>
             <el-button
-                v-if="scope.row.status !== 0"
+                v-if="scope.row.status === 1 || scope.row.status === 2"
                 size="mini"
                 type="text"
                 :class="scope.row.status === 1 ? 'text-warning' : 'text-success'"
@@ -331,7 +332,7 @@
         </el-form-item>
 
           <el-row :gutter="20">
-            <el-col :span="12">
+            <el-col :span="12" v-if="form.activityType === 1">
                     <el-form-item
                     label="发放库存"
                     prop="stock"
@@ -433,7 +434,7 @@
            
            <!-- 状态印章 -->
            <div class="ticket-status-stamp" v-if="viewForm.status !== 1">
-               {{ viewForm.status === 2 ? '已下架' : (viewForm.status === 0 ? '待审核' : '已过期') }}
+               {{ viewForm.status === 0 ? '未审核' : (viewForm.status === 2 ? '已下架' : (viewForm.status === 3 ? '审核失败' : '已过期')) }}
            </div>
        </div>
 
@@ -452,7 +453,7 @@
 
                     <div class="info-item">
                         <span class="label">库存:</span>
-                        <span class="value">{{ viewForm.stock }}</span>
+                        <span class="value">{{ viewForm.activityType === 1 ? viewForm.stock : '不限' }}</span>
                     </div>
                      <div class="info-item full">
                         <span class="label">使用规则:</span>
