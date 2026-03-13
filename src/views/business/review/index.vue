@@ -27,9 +27,17 @@
         </el-form-item>
         <el-form-item label="状态" prop="status">
             <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 150px" @change="handleQuery">
-            <el-option label="正常" value="0" />
-            <el-option label="被举报" value="1" />
-            <el-option label="禁止查看" value="2" />
+            <el-option label="草稿" :value="0" />
+            <el-option label="已发布" :value="1" />
+            <el-option label="已下架" :value="2" />
+            </el-select>
+        </el-form-item>
+        <el-form-item label="审核状态" prop="auditStatus">
+            <el-select v-model="queryParams.auditStatus" placeholder="请选择审核状态" clearable style="width: 170px" @change="handleQuery">
+            <el-option label="未审核" :value="0" />
+            <el-option label="审核通过" :value="1" />
+            <el-option label="人工审核驳回" :value="2" />
+            <el-option label="自动审核驳回" :value="3" />
             </el-select>
         </el-form-item>
         <el-form-item class="search-btns">
@@ -80,6 +88,15 @@
             @click="handleExport"
             v-hasPermi="['review:review:export']"
             >导出</el-button>
+        </el-col>
+        <el-col :span="1.5">
+            <el-button
+            type="primary"
+            plain
+            icon="el-icon-magic-stick"
+            size="mini"
+            @click="handleAiCreate"
+            >AI生成</el-button>
         </el-col>
         <div class="right-actions">
            <el-button
@@ -145,10 +162,17 @@
         </el-table-column>
         <el-table-column label="状态" align="center" prop="status" width="100">
             <template slot-scope="scope">
-             <el-tag effect="dark" size="small" :type="scope.row.status === 0 ? 'success' : (scope.row.status === 1 ? 'warning' : 'danger')">
+             <el-tag effect="dark" size="small" :type="getStatusType(scope.row.status)">
                 {{ getStatusText(scope.row.status) }}
             </el-tag>
-            <div v-if="scope.row.status !== 0 && scope.row.rejectReason" style="font-size: 12px; color: #f56c6c; margin-top: 5px;">
+            </template>
+        </el-table-column>
+        <el-table-column label="审核状态" align="center" prop="auditStatus" width="140">
+            <template slot-scope="scope">
+             <el-tag effect="dark" size="small" :type="getAuditStatusType(scope.row.auditStatus)">
+                {{ getAuditStatusText(scope.row.auditStatus) }}
+            </el-tag>
+            <div v-if="isRejectedAuditStatus(scope.row.auditStatus) && scope.row.rejectReason" style="font-size: 12px; color: #f56c6c; margin-top: 5px;">
                 拒绝原因: {{ scope.row.rejectReason }}
             </div>
             </template>
@@ -272,9 +296,9 @@
         
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
-             <el-radio :label="0">正常</el-radio>
-             <el-radio :label="1">被举报</el-radio>
-             <el-radio :label="2">禁止查看</el-radio>
+             <el-radio :label="0">草稿</el-radio>
+             <el-radio :label="1">已发布</el-radio>
+             <el-radio :label="2">已下架</el-radio>
           </el-radio-group>
         </el-form-item>
         
@@ -300,8 +324,11 @@
                    <div class="c-time">{{ detailForm.createTime }}</div>
                </div>
                <div class="status-badge">
-                   <el-tag :type="detailForm.status === 0 ? 'success' : (detailForm.status === 1 ? 'warning' : 'danger')">
+                   <el-tag :type="getStatusType(detailForm.status)">
                     {{ getStatusText(detailForm.status) }}
+                   </el-tag>
+                   <el-tag style="margin-left: 8px;" :type="getAuditStatusType(detailForm.auditStatus)">
+                    {{ getAuditStatusText(detailForm.auditStatus) }}
                    </el-tag>
                </div>
            </div>
@@ -347,7 +374,7 @@
                <div class="stat" style="margin-left: 15px;"><i class="el-icon-star-off"></i> 收藏 {{ detailForm.stared || 0 }}</div>
            </div>
            
-           <div class="reject-reason" v-if="detailForm.status !== 0 && detailForm.rejectReason" style="margin-top: 15px; padding: 10px; background-color: #fef0f0; border-radius: 4px; color: #f56c6c;">
+           <div class="reject-reason" v-if="isRejectedAuditStatus(detailForm.auditStatus) && detailForm.rejectReason" style="margin-top: 15px; padding: 10px; background-color: #fef0f0; border-radius: 4px; color: #f56c6c;">
                 <strong>拒绝原因：</strong>{{ detailForm.rejectReason }}
            </div>
        </div>
@@ -401,6 +428,7 @@ export default {
         userId: null,
         sourceType: null,
         status: null,
+        auditStatus: null,
       },
       // 表单参数
       form: {},
@@ -457,14 +485,44 @@ export default {
       return typeMap[Number(sourceType)] || '未知'
     },
 
-    /** 获取状态文本 */
     getStatusText(status) {
       const statusMap = {
-        0: '正常',
-        1: '被举报',
-        2: '禁止查看'
+        0: '草稿',
+        1: '已发布',
+        2: '已下架'
       }
-      return statusMap[status] || '未知'
+      return statusMap[Number(status)] || '未知'
+    },
+    getStatusType(status) {
+      const typeMap = {
+        0: 'info',
+        1: 'success',
+        2: 'warning'
+      }
+      return typeMap[Number(status)] || 'info'
+    },
+
+    getAuditStatusText(status) {
+      const statusMap = {
+        0: '未审核',
+        1: '审核通过',
+        2: '人工审核驳回',
+        3: '自动审核驳回'
+      }
+      return statusMap[Number(status)] || '-'
+    },
+    getAuditStatusType(status) {
+      const typeMap = {
+        0: 'warning',
+        1: 'success',
+        2: 'danger',
+        3: 'info'
+      }
+      return typeMap[Number(status)] || 'info'
+    },
+    isRejectedAuditStatus(status) {
+      const code = Number(status)
+      return code === 2 || code === 3
     },
 
     /** 查询评价列表 */
@@ -477,7 +535,8 @@ export default {
         pageSize: this.queryParams.pageSize,
         userId: this.queryParams.userId,
         sourceType: this.queryParams.sourceType,
-        status: this.queryParams.status
+        status: this.queryParams.status,
+        auditStatus: this.queryParams.auditStatus
       }
 
       // 移除空值参数
@@ -622,6 +681,7 @@ export default {
         userId: null,
         sourceType: null,
         status: null,
+        auditStatus: null,
       }
       this.handleQuery()
     },

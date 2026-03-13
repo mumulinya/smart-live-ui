@@ -51,7 +51,7 @@
             icon="el-icon-plus"
             size="mini"
             @click="handleAdd"
-            v-hasPermi="['shop:shop:add']"
+            v-hasPermi="['business:shop:add']"
           >新增店铺</el-button>
         </el-col>
         <el-col :span="1.5">
@@ -62,7 +62,7 @@
             size="mini"
             :disabled="single"
             @click="handleUpdate"
-            v-hasPermi="['shop:shop:edit']"
+            v-hasPermi="['business:shop:edit']"
           >修改</el-button>
         </el-col>
         <el-col :span="1.5">
@@ -73,7 +73,7 @@
             size="mini"
             :disabled="multiple"
             @click="handleDelete"
-            v-hasPermi="['shop:shop:remove']"
+            v-hasPermi="['business:shop:remove']"
           >删除</el-button>
         </el-col>
         <el-col :span="1.5">
@@ -83,7 +83,7 @@
             icon="el-icon-download"
             size="mini"
             @click="handleExport"
-            v-hasPermi="['shop:shop:export']"
+            v-hasPermi="['business:shop:export']"
           >导出</el-button>
         </el-col>
         <div class="right-actions">
@@ -155,6 +155,26 @@
             </template>
         </el-table-column>
         <el-table-column label="营业时间" align="center" prop="openHours" width="150" />
+        <el-table-column label="状态" align="center" prop="status" width="100">
+            <template slot-scope="scope">
+              <el-tag size="small" :type="getBizStatusType(scope.row.status)">
+                {{ getBizStatusText(scope.row.status) }}
+              </el-tag>
+            </template>
+        </el-table-column>
+        <el-table-column label="审核状态" align="center" prop="auditStatus" width="120">
+            <template slot-scope="scope">
+              <el-tag size="small" :type="getAuditStatusType(scope.row.auditStatus)">
+                {{ getAuditStatusText(scope.row.auditStatus) }}
+              </el-tag>
+            </template>
+        </el-table-column>
+        <el-table-column label="驳回原因" align="center" min-width="180" show-overflow-tooltip>
+            <template slot-scope="scope">
+              <span v-if="isRejectedStatus(scope.row.auditStatus) && scope.row.rejectReason">{{ scope.row.rejectReason }}</span>
+              <span v-else>-</span>
+            </template>
+        </el-table-column>
         <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
             <template slot-scope="scope">
             <el-button
@@ -168,7 +188,7 @@
                 type="text"
                 icon="el-icon-edit"
                 @click="handleUpdate(scope.row)"
-                v-hasPermi="['shop:shop:edit']"
+                v-hasPermi="['business:shop:edit']"
             >修改</el-button>
             <el-button
                 size="mini"
@@ -176,7 +196,7 @@
                 icon="el-icon-delete"
                 class="text-danger"
                 @click="handleDelete(scope.row)"
-                v-hasPermi="['shop:shop:remove']"
+                v-hasPermi="['business:shop:remove']"
             >删除</el-button>
             </template>
         </el-table-column>
@@ -385,10 +405,33 @@
                    <span class="label">入驻时间:</span>
                    <span class="value">{{ detailForm.createTime }}</span>
                </div>
+               <div class="grid-item">
+                   <i class="el-icon-s-operation"></i>
+                   <span class="label">状态:</span>
+                   <span class="value">
+                     <el-tag size="small" :type="getBizStatusType(detailForm.status)">
+                       {{ getBizStatusText(detailForm.status) }}
+                     </el-tag>
+                   </span>
+               </div>
+               <div class="grid-item">
+                   <i class="el-icon-s-check"></i>
+                   <span class="label">审核状态:</span>
+                   <span class="value">
+                     <el-tag size="small" :type="getAuditStatusType(detailForm.auditStatus)">
+                       {{ getAuditStatusText(detailForm.auditStatus) }}
+                     </el-tag>
+                   </span>
+               </div>
                 <div class="grid-item">
                    <i class="el-icon-map-location"></i>
                    <span class="label">经纬坐标:</span>
                    <span class="value">{{ detailForm.x }}, {{ detailForm.y }}</span>
+               </div>
+               <div class="grid-item full" v-if="isRejectedStatus(detailForm.auditStatus)">
+                   <i class="el-icon-warning-outline"></i>
+                   <span class="label">驳回原因:</span>
+                   <span class="value">{{ detailForm.rejectReason || '-' }}</span>
                </div>
            </div>
 
@@ -586,6 +629,31 @@ export default {
       if (!typeId) return ''
       const type = this.shopTypeList.find(item => item.id === typeId)
       return type ? type.name : '未知类型'
+    },
+
+    getBizStatusText(status) {
+      const map = { 1: '上架', 2: '下架' }
+      return map[Number(status)] || '-'
+    },
+
+    getBizStatusType(status) {
+      const map = { 1: 'success', 2: 'info' }
+      return map[Number(status)] || 'info'
+    },
+
+    getAuditStatusText(status) {
+      const map = { 0: '待审', 1: '通过', 2: '人工驳回', 3: '自动驳回' }
+      return map[Number(status)] || '-'
+    },
+
+    getAuditStatusType(status) {
+      const map = { 0: 'warning', 1: 'success', 2: 'danger', 3: 'info' }
+      return map[Number(status)] || 'info'
+    },
+
+    isRejectedStatus(status) {
+      const code = Number(status)
+      return code === 2 || code === 3
     },
 
     getFirstImage(images) {

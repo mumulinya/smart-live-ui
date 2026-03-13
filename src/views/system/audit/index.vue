@@ -196,30 +196,31 @@
 
       </template>
 
-      <!-- 商品专属列 -->
       <template v-if="activeTab === 'product'">
-        <el-table-column label="图片" width="100" align="center">
+        <el-table-column label="商品图片" width="100" align="center">
           <template slot-scope="{ row }">
             <el-image 
-              v-if="row.shopImages"
-              :src="getFileUrl(row.shopImages.split(',')[0])" 
-              :preview-src-list="[getFileUrl(row.shopImages.split(',')[0])]"
+              v-if="row.coverImg"
+              :src="getFileUrl(row.coverImg)" 
+              :preview-src-list="[getFileUrl(row.coverImg)]"
               fit="cover"
-              style="width: 60px; height: 60px; border-radius: 4px;"
+              class="table-img"
             >
               <div slot="error" class="image-slot"><i class="el-icon-picture-outline"></i></div>
             </el-image>
             <span v-else class="text-gray">无图片</span>
           </template>
         </el-table-column>
-       <el-table-column prop="title" label="名称" min-width="150" show-overflow-tooltip>
+       <el-table-column prop="name" label="商品信息" min-width="200">
            <template slot-scope="{ row }">
-             <div>
-                <el-tag v-if="row.type === 1" type="danger" size="mini" effect="dark">秒杀</el-tag>
-                <el-tag v-else type="primary" size="mini" effect="plain">普通</el-tag>
-                {{ row.title }}
+             <div class="product-info-cell">
+                <div class="title-line">
+                   <el-tag v-if="isSeckillProduct(row)" type="danger" size="mini" effect="dark" class="status-tag">秒杀</el-tag>
+                   <el-tag v-else type="primary" size="mini" effect="plain" class="status-tag">普通</el-tag>
+                   <span class="product-name">{{ row.name }}</span>
+                </div>
+                <div class="text-gray sub-title" v-if="row.subTitle">{{ row.subTitle }}</div>
              </div>
-             <div class="text-gray" style="font-size: 12px">{{ row.subTitle }}</div>
            </template>
         </el-table-column>
       </template>
@@ -316,35 +317,35 @@
         <!-- Product类型详情：券面信息 -->
         <div v-if="activeTab === 'product'" class="detail-section">
           <div class="section-title">商品预览</div>
-          <div class="voucher-card">
-             <div class="card-header">
-               <!-- <span class="type-tag" :class="{ 'seckill': currentItem.type === 1 }">
-                   {{ currentItem.type === 1 ? '秒杀' : (activeTab === 'voucher' ? '代金券' : '团购') }}
-               </span> -->
-              <span class="card-name">{{ currentItem.title }}</span>
-             </div>
-             <div class="card-body">
-               
-               <div class="info-list">
+          <div class="product-preview-card">
+              <div class="preview-header">
+                <el-tag v-if="isSeckillProduct(currentItem)" type="danger" effect="dark">秒杀商品</el-tag>
+                <el-tag v-else type="primary" effect="plain">普通商品</el-tag>
+                <span class="preview-name">{{ currentItem.name }}</span>
+              </div>
+              
+              <div class="preview-body" v-if="currentItem.coverImg">
+                  <div class="image-container" style="background: #fdfdfd; padding: 10px; border-radius: 8px; display: inline-block;">
+                    <el-image 
+                      :src="getFileUrl(currentItem.coverImg)" 
+                      :preview-src-list="[getFileUrl(currentItem.coverImg)]"
+                      fit="contain" 
+                      style="max-width: 100%; max-height: 300px; border-radius: 4px;"
+                    />
+                  </div>
+              </div>
 
-                 
+              <div class="preview-footer" style="padding: 15px 20px; background: #fafafa; border-top: 1px dashed #ebeef5;">
+                  <div class="info-row" v-if="currentItem.subTitle" style="margin-bottom: 8px; display: flex; align-items: center;">
+                      <span class="label" style="color: #909399; width: 80px;">副标题：</span>
+                      <span class="value" style="color: #606266; font-weight: 500;">{{ currentItem.subTitle }}</span>
+                  </div>
+                  <div class="info-row" v-if="currentItem.price !== undefined" style="margin-bottom: 8px; display: flex; align-items: center;">
+                      <span class="label" style="color: #909399; width: 80px;">销售价格：</span>
+                      <span class="value price" style="color: #f56c6c; font-size: 18px; font-weight: bold;">¥{{ currentItem.price }}</span>
+                  </div>
               </div>
-             </div>
           </div>
-          
-           <div v-if="currentItem.shopImages" class="detail-block mt-20">
-              <div class="section-title">相关图片</div>
-              <div class="blog-images-grid">
-                <el-image 
-                  v-for="(img, index) in currentItem.shopImages.split(',')" 
-                  :key="index"
-                  :src="getFileUrl(img)" 
-                  :preview-src-list="currentItem.shopImages.split(',').map(item => getFileUrl(item))"
-                  class="grid-img" 
-                  fit="cover"
-                />
-              </div>
-           </div>
         </div>
 
         <!-- Shop类型详情：营业执照 -->
@@ -583,6 +584,15 @@ export default {
     truncateText(text, len) {
       if (!text) return ''
       return text.length > len ? text.slice(0, len) + '...' : text
+    },
+
+    isSeckillProduct(item) {
+      if (!item) return false
+      if (item.activityType !== undefined && item.activityType !== null) {
+        return Number(item.activityType) === 1
+      }
+      // 兼容历史数据未提供 activityType 的情况
+      return Number(item.category) === 1
     },
 
     getFileUrl(url) {
@@ -1077,10 +1087,100 @@ export default {
   font-size: 12px;
   color: #606266;
 }
-.content-box {
-    background: #f8f8f8;
-    padding: 15px;
-    border-radius: 4px;
-    line-height: 1.6;
+/* 深度美化样式汇总 */
+.audit-tabs ::v-deep .el-tabs__item {
+  height: 50px;
+  line-height: 50px;
+  font-size: 15px;
+  transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+}
+.audit-tabs ::v-deep .el-tabs__item.is-active {
+  font-weight: bold;
+  background-color: #f0f7ff;
+}
+.tab-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-section {
+  background: #fff;
+  padding: 20px 24px 4px;
+  margin: 16px 0;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+}
+
+.table-img {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transition: all 0.3s ease;
+  border: 1px solid #f0f0f0;
+}
+.table-img:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.product-info-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.title-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.product-name {
+  font-weight: 600;
+  color: #1f2d3d;
+  font-size: 14px;
+}
+.sub-title {
+  font-size: 12px;
+  opacity: 0.8;
+}
+.status-tag {
+  border-radius: 4px;
+  padding: 0 6px;
+}
+
+/* 详情弹窗自定义类 */
+.product-preview-card {
+  background: #fff;
+  border: 1px solid #ebeef5;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.05);
+  margin-top: 10px;
+}
+.preview-header {
+  padding: 16px 20px;
+  background: linear-gradient(to right, #f8f9fb, #ffffff);
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.preview-name {
+  font-size: 16px;
+  font-weight: bold;
+  color: #2c3e50;
+}
+.preview-body {
+  padding: 24px;
+  text-align: center;
+  background: #fdfdfd;
+}
+
+.audit-detail .el-descriptions {
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
 }
 </style>

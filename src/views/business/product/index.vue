@@ -66,7 +66,7 @@
             icon="el-icon-plus"
             size="mini"
             @click="handleAdd"
-            v-hasPermi="['marketing:voucher:add']"
+            v-hasPermi="['business:product:add']"
             >新增商品</el-button>
         </el-col>
         <el-col :span="1.5">
@@ -77,7 +77,7 @@
             size="mini"
             :disabled="single"
             @click="handleUpdate"
-            v-hasPermi="['marketing:voucher:edit']"
+            v-hasPermi="['business:product:edit']"
             >修改</el-button>
         </el-col>
         <el-col :span="1.5">
@@ -88,19 +88,19 @@
             size="mini"
             :disabled="multiple"
             @click="handleDelete"
-            v-hasPermi="['marketing:voucher:remove']"
+            v-hasPermi="['business:product:remove']"
             >删除</el-button>
         </el-col>
-        <!-- <el-col :span="1.5">
+        <el-col :span="1.5">
             <el-button
             type="warning"
             plain
             icon="el-icon-download"
             size="mini"
             @click="handleExport"
-            v-hasPermi="['marketing:voucher:export']"
+            v-hasPermi="['business:product:export']"
             >导出</el-button>
-        </el-col> -->
+        </el-col>
         <div class="right-actions">
            <el-button
             type="text"
@@ -182,13 +182,24 @@
                 </div>
             </template>
         </el-table-column>
-        <el-table-column label="状态" align="center" prop="status" width="100">
+        <el-table-column label="业务状态" align="center" prop="status" width="100">
             <template slot-scope="scope">
-                <el-tag v-if="scope.row.status === 0" type="warning">未审核</el-tag>
-                <el-tag v-else-if="scope.row.status === 1" type="success">已上架</el-tag>
-                <el-tag v-else-if="scope.row.status === 2" type="info">已下架</el-tag>
-                <el-tag v-else-if="scope.row.status === 3" type="danger">审核失败</el-tag>
-                <el-tag v-else-if="scope.row.status === 4" type="info">已过期</el-tag>
+                <el-tag size="small" :type="getBizStatusType(scope.row.status)">
+                  {{ getBizStatusText(scope.row.status) }}
+                </el-tag>
+            </template>
+        </el-table-column>
+        <el-table-column label="审核状态" align="center" prop="auditStatus" width="120">
+            <template slot-scope="scope">
+                <el-tag size="small" :type="getAuditStatusType(scope.row.auditStatus)">
+                  {{ getAuditStatusText(scope.row.auditStatus) }}
+                </el-tag>
+            </template>
+        </el-table-column>
+        <el-table-column label="驳回原因" align="center" min-width="180" show-overflow-tooltip>
+            <template slot-scope="scope">
+                <span v-if="isRejectedAuditStatus(scope.row.auditStatus) && scope.row.rejectReason">{{ scope.row.rejectReason }}</span>
+                <span v-else>-</span>
             </template>
         </el-table-column>
         <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
@@ -204,7 +215,7 @@
                 type="text"
                 icon="el-icon-edit"
                 @click="handleUpdate(scope.row)"
-                v-hasPermi="['marketing:voucher:edit']"
+                v-hasPermi="['business:product:edit']"
             >修改</el-button>
             <el-button
                 v-if="scope.row.status === 1 || scope.row.status === 2"
@@ -221,7 +232,7 @@
                 icon="el-icon-delete"
                 class="text-danger"
                 @click="handleDelete(scope.row)"
-                v-hasPermi="['marketing:voucher:remove']"
+                v-hasPermi="['business:product:remove']"
             >删除</el-button>
             </template>
         </el-table-column>
@@ -433,8 +444,8 @@
            </div>
            
            <!-- 状态印章 -->
-           <div class="ticket-status-stamp" v-if="viewForm.status !== 1">
-               {{ viewForm.status === 0 ? '未审核' : (viewForm.status === 2 ? '已下架' : (viewForm.status === 3 ? '审核失败' : '已过期')) }}
+           <div class="ticket-status-stamp" v-if="viewForm.status">
+               {{ getBizStatusText(viewForm.status) }}
            </div>
        </div>
 
@@ -458,6 +469,10 @@
                      <div class="info-item full">
                         <span class="label">使用规则:</span>
                         <span class="value">{{ viewForm.rulesJson || '暂无详细规则' }}</span>
+                    </div>
+                    <div class="info-item full" v-if="isRejectedAuditStatus(viewForm.auditStatus)">
+                        <span class="label">驳回原因:</span>
+                        <span class="value">{{ viewForm.rejectReason || '-' }}</span>
                     </div>
                 </div>
             </div>
@@ -659,6 +674,29 @@ export default {
     this.getList()
   },
   methods: {
+    getBizStatusText(status) {
+      const map = { 1: '已上架', 2: '已下架', 3: '已过期' }
+      return map[Number(status)] || '-'
+    },
+    getBizStatusType(status) {
+      const map = { 1: 'success', 2: 'info', 3: 'warning' }
+      return map[Number(status)] || 'info'
+    },
+    getAuditStatusText(status) {
+      if (status === null || status === undefined || status === '') return '-'
+      const map = { 0: '未审核', 1: '审核通过', 2: '人工审核驳回', 3: '自动审核驳回' }
+      return map[Number(status)] || '-'
+    },
+    getAuditStatusType(status) {
+      if (status === null || status === undefined || status === '') return 'info'
+      const map = { 0: 'warning', 1: 'success', 2: 'danger', 3: 'info' }
+      return map[Number(status)] || 'info'
+    },
+    isRejectedAuditStatus(status) {
+      if (status === null || status === undefined || status === '') return false
+      const code = Number(status)
+      return code === 2 || code === 3
+    },
     /** 处理日期范围变化 */
     handleRangeChange(val) {
       if (val && val.length === 2) {

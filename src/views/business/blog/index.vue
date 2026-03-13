@@ -61,6 +61,13 @@
             style="width: 200px"
             />
         </el-form-item>
+        <el-form-item label="状态" prop="status">
+            <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 140px" @change="handleQuery">
+            <el-option label="草稿" :value="0" />
+            <el-option label="已发布" :value="1" />
+            <el-option label="已下架" :value="2" />
+            </el-select>
+        </el-form-item>
         <el-form-item class="search-btns">
             <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
             <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
@@ -167,6 +174,20 @@
         <el-table-column label="创建时间" align="center" prop="createTime" width="160">
             <template slot-scope="scope">
             <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}') }}</span>
+            </template>
+        </el-table-column>
+        <el-table-column label="状态" align="center" prop="status" width="100">
+            <template slot-scope="scope">
+              <el-tag size="small" :type="getBizStatusType(scope.row.status)">
+                {{ getBizStatusText(scope.row.status) }}
+              </el-tag>
+            </template>
+        </el-table-column>
+        <el-table-column label="审核状态" align="center" prop="auditStatus" width="140">
+            <template slot-scope="scope">
+              <el-tag size="small" :type="getAuditStatusType(scope.row.auditStatus)">
+                {{ getAuditStatusText(scope.row.auditStatus) }}
+              </el-tag>
             </template>
         </el-table-column>
         <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200" fixed="right">
@@ -317,6 +338,22 @@
                      <div class="label">评论</div>
                      <div class="val comment">{{ detailForm.comments || 0 }}</div>
                  </div>
+                 <div class="stat-box">
+                     <div class="label">状态</div>
+                     <div class="val">
+                        <el-tag size="small" :type="getBizStatusType(detailForm.status)">
+                          {{ getBizStatusText(detailForm.status) }}
+                        </el-tag>
+                     </div>
+                 </div>
+                 <div class="stat-box">
+                     <div class="label">审核状态</div>
+                     <div class="val">
+                        <el-tag size="small" :type="getAuditStatusType(detailForm.auditStatus)">
+                          {{ getAuditStatusText(detailForm.auditStatus) }}
+                        </el-tag>
+                     </div>
+                 </div>
              </div>
 
              <div class="detail-gallery" v-if="detailForm.imageList && detailForm.imageList.length > 0">
@@ -395,6 +432,7 @@ export default {
         shopId: null,
         userId: null,
         title: null,
+        status: null,
       },
       // 表单参数
       form: {
@@ -487,6 +525,22 @@ export default {
       if (!userId) return '未知用户'
       const user = this.userList.find(item => item.id == userId)
       return user ? user.nickName : '未知用户'
+    },
+    getBizStatusText(status) {
+      const map = { 0: '草稿', 1: '已发布', 2: '已下架' }
+      return map[Number(status)] || '-'
+    },
+    getBizStatusType(status) {
+      const map = { 0: 'info', 1: 'success', 2: 'warning' }
+      return map[Number(status)] || 'info'
+    },
+    getAuditStatusText(status) {
+      const map = { 0: '未审核', 1: '审核通过', 2: '人工审核驳回', 3: '自动审核驳回' }
+      return map[Number(status)] || '-'
+    },
+    getAuditStatusType(status) {
+      const map = { 0: 'warning', 1: 'success', 2: 'danger', 3: 'info' }
+      return map[Number(status)] || 'info'
     },
     /** 店铺类型改变时的处理 */
     handleTypeChange(typeId) {

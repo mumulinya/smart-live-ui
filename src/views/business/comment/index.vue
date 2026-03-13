@@ -31,6 +31,14 @@
             <el-option label="禁用" value="1" />
             </el-select>
         </el-form-item>
+        <el-form-item label="审核状态" prop="auditStatus">
+            <el-select v-model="queryParams.auditStatus" placeholder="请选择审核状态" clearable style="width: 170px" @change="handleQuery">
+            <el-option label="未审核" :value="0" />
+            <el-option label="审核通过" :value="1" />
+            <el-option label="人工审核驳回" :value="2" />
+            <el-option label="自动审核驳回" :value="3" />
+            </el-select>
+        </el-form-item>
         <el-form-item class="search-btns">
             <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
             <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
@@ -80,16 +88,6 @@
             v-hasPermi="['comment:comment:export']"
             >导出</el-button>
         </el-col>
-        <el-col :span="1.5">
-            <el-button
-            type="primary"
-            plain
-            icon="el-icon-magic-stick"
-            size="mini"
-            @click="handleAiCreate"
-            >AI生成</el-button>
-        </el-col>
-
         <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
         </el-row>
     </el-card>
@@ -125,8 +123,15 @@
         </el-table-column>
         <el-table-column label="状态" align="center" prop="status" width="100">
             <template slot-scope="scope">
-             <el-tag effect="dark" size="small" :type="scope.row.status === '0' ? 'success' : 'danger'">
+             <el-tag effect="dark" size="small" :type="getStatusType(scope.row.status)">
                 {{ getStatusText(scope.row.status) }}
+            </el-tag>
+            </template>
+        </el-table-column>
+        <el-table-column label="审核状态" align="center" prop="auditStatus" width="140">
+            <template slot-scope="scope">
+             <el-tag effect="dark" size="small" :type="getAuditStatusType(scope.row.auditStatus)">
+                {{ getAuditStatusText(scope.row.auditStatus) }}
             </el-tag>
             </template>
         </el-table-column>
@@ -227,8 +232,11 @@
                    <div class="c-time">{{ detailForm.createTime }}</div>
                </div>
                <div class="status-badge">
-                   <el-tag :type="detailForm.status === '0' ? 'success' : 'danger'">
+                   <el-tag :type="getStatusType(detailForm.status)">
                     {{ getStatusText(detailForm.status) }}
+                   </el-tag>
+                   <el-tag style="margin-left: 8px;" :type="getAuditStatusType(detailForm.auditStatus)">
+                    {{ getAuditStatusText(detailForm.auditStatus) }}
                    </el-tag>
                </div>
            </div>
@@ -271,7 +279,7 @@
 </template>
 
 <script>
-import { listComment, getComment, delComment, addComment, updateComment,aiCreateComment } from "@/api/comment/comment"
+import { listComment, getComment, delComment, addComment, updateComment } from "@/api/comment/comment"
 import {listUser, userList} from "@/api/user/user"
 import {blogList, listBlog} from "@/api/blog/blog"
 import { shopList } from "@/api/shop/shop"
@@ -313,6 +321,7 @@ export default {
         userId: null,
         sourceType: null,
         status: null,
+        auditStatus: null,
       },
       // 表单参数
       form: {},
@@ -369,13 +378,38 @@ export default {
       return typeMap[sourceType] || '未知'
     },
 
-    /** 获取状态文本 */
     getStatusText(status) {
       const statusMap = {
         '0': '正常',
         '1': '禁用'
       }
-      return statusMap[status] || '未知'
+      return statusMap[String(status)] || '未知'
+    },
+    getStatusType(status) {
+      const typeMap = {
+        '0': 'success',
+        '1': 'danger'
+      }
+      return typeMap[String(status)] || 'info'
+    },
+
+    getAuditStatusText(status) {
+      const statusMap = {
+        0: '未审核',
+        1: '审核通过',
+        2: '人工审核驳回',
+        3: '自动审核驳回'
+      }
+      return statusMap[Number(status)] || '-'
+    },
+    getAuditStatusType(status) {
+      const typeMap = {
+        0: 'warning',
+        1: 'success',
+        2: 'danger',
+        3: 'info'
+      }
+      return typeMap[Number(status)] || 'info'
     },
 
     /** 查询评论列表 */
@@ -388,7 +422,8 @@ export default {
         pageSize: this.queryParams.pageSize,
         userId: this.queryParams.userId,
         sourceType: this.queryParams.sourceType,
-        status: this.queryParams.status
+        status: this.queryParams.status,
+        auditStatus: this.queryParams.auditStatus
       }
 
       // 移除空值参数
@@ -506,6 +541,7 @@ export default {
         userId: null,
         sourceType: null,
         status: null,
+        auditStatus: null,
       }
       this.handleQuery()
     },
@@ -572,12 +608,6 @@ export default {
       this.download('comment/comment/export', {
         ...this.queryParams
       }, `comment_${new Date().getTime()}.xlsx`)
-    },
-    handleAiCreate(){
-      aiCreateComment().then(response => {
-        this.$modal.msgSuccess("创建成功")
-        this.getList()
-      })
     }
   }
 }

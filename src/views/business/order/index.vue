@@ -84,7 +84,7 @@
             icon="el-icon-plus"
             size="mini"
             @click="handleAdd"
-            v-hasPermi="['order:order:add']"
+            v-hasPermi="['business:order:add']"
             >新增订单</el-button>
         </el-col>
         <el-col :span="1.5">
@@ -95,7 +95,7 @@
             size="mini"
             :disabled="single"
             @click="handleUpdate"
-            v-hasPermi="['order:order:edit']"
+            v-hasPermi="['business:order:edit']"
             >修改</el-button>
         </el-col>
         <el-col :span="1.5">
@@ -106,7 +106,7 @@
             size="mini"
             :disabled="multiple"
             @click="handleDelete"
-            v-hasPermi="['order:order:remove']"
+            v-hasPermi="['business:order:remove']"
             >删除</el-button>
         </el-col>
         <el-col :span="1.5">
@@ -116,7 +116,7 @@
             icon="el-icon-download"
             size="mini"
             @click="handleExport"
-            v-hasPermi="['order:order:export']"
+            v-hasPermi="['business:order:export']"
             >导出</el-button>
         </el-col>
         <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
@@ -418,7 +418,7 @@
 <script>
 import { listOrder, getOrder, delOrder, addOrder, updateOrder } from "@/api/order/order"
 import {listUser, userList} from "@/api/user/user"
-import {listVoucher, voucherList} from "@/api/marketing/voucher"
+import {listProduct} from "@/api/product"
 import {listShop, shopList} from "@/api/shop/shop"
 
 export default {
@@ -513,7 +513,7 @@ export default {
     },
     /** 获取优惠券列表 */
     getVoucherList() {
-      voucherList().then(response => {
+      listProduct().then(response => {
         this.voucherList = response.data|| []
       })
     },

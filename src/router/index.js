@@ -95,28 +95,7 @@ export const constantRoutes = [
         meta: { title: '个人中心', icon: 'user' }
       }
     ]
-  },
-  {
-    path: '/points',
-    component: Layout,
-    redirect: '/points/record',
-    name: 'Points',
-    meta: { title: '积分管理', icon: 'money' },
-    children: [
-      {
-        path: 'record',
-        name: 'PointsRecord',
-        component: () => import('@/views/system/points/RecordList'),
-        meta: { title: '积分明细', icon: 'list' }
-      },
-      {
-        path: 'lottery',
-        name: 'LotteryConfig',
-        component: () => import('@/views/system/points/LotteryConfig'),
-        meta: { title: '抽奖配置', icon: 'star' }
-      }
-    ]
-  },
+  }
 ]
 
 // 鍔ㄦ€佽矾鐢憋紝鍩轰簬鐢ㄦ埛鏉冮檺鍔ㄦ€佸幓鍔犺浇
