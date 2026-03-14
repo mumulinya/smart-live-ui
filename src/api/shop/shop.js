@@ -63,6 +63,19 @@ export function shopTypeList() {
     method: 'get',
   })
 }
+export function getShopAnalysis(shopId, timeRange = 'week') {
+  return request({
+    url: '/shop/analysis/' + shopId,
+    method: 'get',
+    params: { timeRange }
+  })
+}
+export function getShopSuggest(shopId) {
+  return request({
+    url: '/shop/suggest/' + shopId,
+    method: 'get'
+  })
+}
 export function allPublish(){
   return request({
     url: '/shop/allPublish',

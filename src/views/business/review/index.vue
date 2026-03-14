@@ -2,22 +2,14 @@
   <div class="app-container">
     <el-card class="box-card mb-4" shadow="never">
         <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px" class="search-form">
-        <el-form-item label="用户名称" prop="userId">
-            <el-select
+        <el-form-item label="用户ID" prop="userId">
+            <el-input
             v-model="queryParams.userId"
-            placeholder="请选择用户"
+            placeholder="请输入用户ID"
             clearable
-            filterable
             style="width: 180px"
-            @change="handleQuery"
-            >
-            <el-option
-                v-for="user in userList"
-                :key="user.id"
-                :label="user.nickName"
-                :value="user.id"
+            @keyup.enter.native="handleQuery"
             />
-            </el-select>
         </el-form-item>
         <el-form-item label="来源" prop="sourceType">
             <el-select v-model="queryParams.sourceType" placeholder="请选择来源" clearable style="width: 150px" @change="handleQuery">
@@ -129,7 +121,7 @@
                        <span class="source-name">{{ scope.row.sourceName || '--' }}</span>
                    </div>
                    <div class="user-line">
-                       <i class="el-icon-user"></i> {{ scope.row.userName || '--' }}
+                       <i class="el-icon-user"></i> {{ scope.row.nickName || scope.row.userName || '--' }}
                    </div>
                 </div>
             </template>
@@ -216,16 +208,9 @@
 
     <!-- 添加或修改评价对话框 -->
     <el-dialog :title="title" :visible.sync="open" width="600px" append-to-body custom-class="review-edit-dialog">
-      <el-form ref="form" :model="form" :rules="rules" label-width="80px" class="edit-form">
-        <el-form-item label="用户" prop="userId">
-          <el-select v-model="form.userId" placeholder="请选择用户" style="width: 100%" filterable>
-            <el-option
-              v-for="user in userList"
-              :key="user.id"
-              :label="user.nickName"
-              :value="user.id"
-            />
-          </el-select>
+        <el-form ref="form" :model="form" :rules="rules" label-width="80px" class="edit-form">
+        <el-form-item label="用户ID" prop="userId">
+          <el-input v-model="form.userId" placeholder="请输入用户ID" />
         </el-form-item>
         <el-row>
              <el-col :span="12">
@@ -317,10 +302,10 @@
        <div class="detail-container">
            <div class="user-meta">
                <div class="user-avatar-circle">
-                   {{ (detailForm.userName || 'U').charAt(0).toUpperCase() }}
+                   {{ (detailForm.nickName || detailForm.userName || 'U').charAt(0).toUpperCase() }}
                </div>
                <div class="meta-info">
-                   <div class="u-name">{{ detailForm.userName || '未知用户' }} <el-tag v-if="detailForm.isAnonymous" size="mini" type="info">匿名</el-tag></div>
+                   <div class="u-name">{{ detailForm.nickName || detailForm.userName || '未知用户' }} <el-tag v-if="detailForm.isAnonymous" size="mini" type="info">匿名</el-tag></div>
                    <div class="c-time">{{ detailForm.createTime }}</div>
                </div>
                <div class="status-badge">
@@ -387,7 +372,6 @@
 
 <script>
 import { listReview, getReview, delReview, addReview, updateReview, aiCreateReview, publishReview, publishAllReview } from "@/api/review/review"
-import {listUser, userList} from "@/api/user/user"
 import { shopList } from "@/api/shop/shop"
 import { listProduct, getProduct } from "@/api/product"
 
@@ -409,8 +393,6 @@ export default {
       total: 0,
       // 评价表格数据
       reviewList: [],
-      // 用户列表
-      userList: [],
       // 商品列表
       productList: [],
       // 店铺列表
@@ -458,24 +440,9 @@ export default {
     }
   },
   created() {
-    // 先加载用户列表，再加载评价列表
-    this.loadUserList()
+    this.getList()
   },
   methods: {
-    /** 加载用户列表 */
-    async loadUserList() {
-      try {
-        const response = await userList()
-        this.userList = response.data || []
-        // 用户列表加载完成后，再加载评价列表
-        this.getList()
-      } catch (error) {
-        console.error('加载用户列表失败:', error)
-        this.userList = []
-        this.loading = false
-      }
-    },
-
     /** 获取来源类型文本 */
     getSourceTypeText(sourceType) {
       const typeMap = {
@@ -602,9 +569,7 @@ export default {
           const sourceType = Number(item.sourceType)
           const product = productMap.get(sourceId)
           const shop = shopMap.get(sourceId)
-
-          const user = this.userList.find(user => String(user.id) === String(item.userId))
-          item.userName = user ? user.nickName : `用户${item.userId}`
+          item.userName = item.nickName || item.userName || `用户${item.userId}`
 
           if (sourceType === 4 || (product && !shop)) {
             const productName = product && (product.name || product.title || product.productName)
