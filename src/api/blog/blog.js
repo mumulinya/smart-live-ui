@@ -62,3 +62,11 @@ export function publish(id){
     method: 'post',
   })
 }
+
+export function searchBlogOptions(keyword) {
+  return request({
+    url: '/blog/search',
+    method: 'get',
+    params: { keyword }
+  })
+}

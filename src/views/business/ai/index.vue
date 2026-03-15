@@ -1,6 +1,6 @@
 <template>
   <div class="app-container merchant-ai-page">
-    <div class="assistant-shell" v-loading="isShopLoading">
+    <div class="assistant-shell" :style="assistantShellStyle" v-loading="isShopLoading">
       <header class="assistant-topbar">
         <div class="topbar-left">
           <div class="assistant-logo">AI 商家助手</div>
@@ -210,14 +210,16 @@
                 {{ item.label }}
               </button>
             </div>
-            <div class="data-card-list placeholder-gap">
-              <div v-for="card in analysisCards" :key="card.label" class="data-card">
-                <div class="data-label">{{ card.label }}</div>
-                <div class="data-value">{{ card.value }}</div>
-                <div class="data-sub">{{ card.sub }}</div>
+            <div class="panel-scroll-section">
+              <div class="data-card-list placeholder-gap">
+                <div v-for="card in analysisCards" :key="card.label" class="data-card">
+                  <div class="data-label">{{ card.label }}</div>
+                  <div class="data-value">{{ card.value }}</div>
+                  <div class="data-sub">{{ card.sub }}</div>
+                </div>
               </div>
+              <div class="panel-note">注：以上数据仅供参考，AI 分析结果基于现有经营模型，请结合实际情况。</div>
             </div>
-            <div class="panel-note">注：以上数据仅供参考，AI 分析结果基于现有经营模型，请结合实际情况。</div>
           </template>
 
           <template v-else-if="activeType === 'copywrite'">
@@ -300,14 +302,16 @@
                 {{ item.label }}
               </button>
             </div>
-            <div class="data-card-list">
-              <div v-for="card in suggestCards" :key="card.label" class="data-card">
-                <div class="data-label">{{ card.label }}</div>
-                <div class="data-value small">{{ card.value }}</div>
-                <div class="data-sub">{{ card.sub }}</div>
+            <div class="panel-scroll-section">
+              <div class="data-card-list">
+                <div v-for="card in suggestCards" :key="card.label" class="data-card">
+                  <div class="data-label">{{ card.label }}</div>
+                  <div class="data-value small">{{ card.value }}</div>
+                  <div class="data-sub">{{ card.sub }}</div>
+                </div>
               </div>
+              <div class="panel-note">注：AI 辅助决策建议基于大数据分析，不构成法律声明及商业保证。</div>
             </div>
-            <div class="panel-note">注：AI 辅助决策建议基于大数据分析，不构成法律声明及商业保证。</div>
           </template>
         </aside>
 
@@ -328,53 +332,7 @@
             </div>
 
             <template v-else-if="!currentSession || !currentSession.messages.length">
-              <div class="chat-welcome-card" v-if="activeType === 'reply' && selectedReview">
-                <article class="context-preview">
-                  <div class="context-head">
-                    <div>
-                      <div class="context-title">评价详情</div>
-                      <div class="context-meta">
-                        <span class="context-user-meta">
-                          <span class="review-user-avatar medium">
-                            <el-image
-                              v-if="selectedReview.userIcon"
-                              :src="selectedReview.userIcon"
-                              :preview-src-list="[selectedReview.userIcon]"
-                              fit="cover"
-                              class="review-user-avatar-image"
-                            />
-                            <span v-else class="review-user-badge">{{ getNameAvatar(getReviewDisplayName(selectedReview)) }}</span>
-                          </span>
-                          <span>{{ getReviewDisplayName(selectedReview) }}</span>
-                        </span>
-                        <span>{{ formatReviewTime(selectedReview.createTime) }}</span>
-                      </div>
-                    </div>
-                    <div class="context-badge">{{ getReviewSourceLabel(selectedReview.sourceType) }} 于 {{ selectedReview.sourceName }}</div>
-                  </div>
-                  <div class="context-rating" v-if="selectedReview.score > 0">
-                    <span
-                      v-for="starIndex in 5"
-                      :key="'context_star_' + starIndex"
-                      class="rating-star"
-                      :class="{ active: starIndex <= getScoreValue(selectedReview.score) }"
-                    >★</span>
-                  </div>
-                  <div class="context-content">{{ selectedReview.plainContent || "评价内容加载中..." }}</div>
-                  <div v-if="selectedReview.imageList && selectedReview.imageList.length" class="review-image-list">
-                    <el-image
-                      v-for="(image, imageIndex) in selectedReview.imageList"
-                      :key="'context_image_' + imageIndex"
-                      :src="image"
-                      :preview-src-list="selectedReview.imageList"
-                      fit="cover"
-                      class="review-image-thumb"
-                    />
-                  </div>
-                </article>
-              </div>
-
-              <div class="chat-welcome-card" v-else-if="activeType === 'copywrite' && selectedProduct">
+              <div class="chat-welcome-card" v-if="activeType === 'copywrite' && selectedProduct">
                 <article class="context-preview product">
                   <div class="context-head">
                     <div>
@@ -514,7 +472,7 @@
             </template>
 
             <div
-              v-if="activeType === 'reply' && selectedReview && generatedReplyContent"
+              v-if="activeType === 'reply' && replyActionReview && generatedReplyContent"
               class="reply-action-bar"
             >
               <div>
@@ -535,24 +493,29 @@
           <div class="chat-input-area">
             <div v-if="activeType === 'reply' && selectedReview" class="chat-context-card review">
               <div class="chat-context-head">
-                <div class="chat-context-title">当前已绑定评价</div>
-                <div class="chat-context-meta">
-                  <span class="context-user-meta">
-                    <span class="review-user-avatar medium">
-                      <el-image
-                        v-if="selectedReview.userIcon"
-                        :src="selectedReview.userIcon"
-                        :preview-src-list="[selectedReview.userIcon]"
-                        fit="cover"
-                        class="review-user-avatar-image"
-                      />
-                      <span v-else class="review-user-badge">{{ getNameAvatar(getReviewDisplayName(selectedReview)) }}</span>
+                <div class="chat-context-main">
+                  <div class="chat-context-title">当前已绑定评价</div>
+                  <div class="chat-context-meta">
+                    <span class="context-user-meta">
+                      <span class="review-user-avatar medium">
+                        <el-image
+                          v-if="selectedReview.userIcon"
+                          :src="selectedReview.userIcon"
+                          :preview-src-list="[selectedReview.userIcon]"
+                          fit="cover"
+                          class="review-user-avatar-image"
+                        />
+                        <span v-else class="review-user-badge">{{ getNameAvatar(getReviewDisplayName(selectedReview)) }}</span>
+                      </span>
+                      <span>{{ getReviewDisplayName(selectedReview) }}</span>
                     </span>
-                    <span>{{ getReviewDisplayName(selectedReview) }}</span>
-                  </span>
-                  <span>{{ formatReviewTime(selectedReview.createTime) }}</span>
-                  <span>{{ getReviewSourceLabel(selectedReview.sourceType) }} · {{ selectedReview.sourceName || '未知来源' }}</span>
+                    <span>{{ formatReviewTime(selectedReview.createTime) }}</span>
+                    <span>{{ getReviewSourceLabel(selectedReview.sourceType) }} · {{ selectedReview.sourceName || '未知来源' }}</span>
+                  </div>
                 </div>
+                <button class="chat-context-close" type="button" @click="clearSelectedReview">
+                  <i class="el-icon-close"></i>
+                </button>
               </div>
               <div class="context-rating" v-if="selectedReview.score > 0">
                 <span
@@ -576,7 +539,12 @@
             </div>
             <div v-else-if="activeType === 'copywrite' && selectedProduct" class="chat-context-card product">
               <div class="chat-context-head">
-                <div class="chat-context-title">当前已绑定商品</div>
+                <div class="chat-context-main">
+                  <div class="chat-context-title">当前已绑定商品</div>
+                </div>
+                <button class="chat-context-close" type="button" @click="clearSelectedProduct">
+                  <i class="el-icon-close"></i>
+                </button>
               </div>
               <div class="message-product-card compact">
                 <div class="product-cover quote">
@@ -681,14 +649,17 @@ const FEATURE_MAP = FEATURE_OPTIONS.reduce(function (result, item) {
 const ANALYSIS_CARDS = [
   { label: '本周订单', value: '--', sub: '统计周期内已确认的订单数。' },
   { label: '预计营收', value: '--', sub: '当前选定范围内的预计营业收入。' },
-  { label: '店铺评分', value: '--', sub: '当前店铺在相应周期内的平均评分。' }
+  { label: '店铺评分', value: '--', sub: '当前店铺在相应周期内的平均评分。' },
+  { label: '差评数量', value: '--', sub: '当前统计周期内的差评条数。' }
 ]
 
 const SUGGEST_CARDS = [
-  { label: '周订单量', value: '--', sub: '用于流量及转化率的改进建议。' },
+  { label: '订单数量', value: '--', sub: '用于流量及转化率的改进建议。' },
   { label: '待处理评价', value: '--', sub: '用于服务质量及售后建议。' },
+  { label: '平均评分', value: '--', sub: '当前店铺在统计周期内的平均评分。' },
+  { label: '差评数量', value: '--', sub: '当前统计周期内的差评条数。' },
   { label: '热销商品', value: '--', sub: '当前周期内销量最高的商品。' },
-  { label: '滞销预警', value: '--', sub: '近期销量较低，可能需要优化的商品。' }
+  { label: '滞销商品', value: '--', sub: '近期销量较低，可能需要优化的商品。' }
 ]
 
 export default {
@@ -735,9 +706,12 @@ export default {
       productTotalExact: false,
       selectedReviewId: null,
       selectedProductId: null,
+      replyActionReview: null,
       reviewDetailCache: {},
+      reviewDetailRequests: {},
       productNameMap: {},
       productDetailCache: {},
+      productDetailRequests: {},
       isShopLoading: false,
       isPanelLoading: false,
       isSessionLoading: false,
@@ -750,6 +724,8 @@ export default {
       activeStreamMessageIndex: -1,
       streamCharQueue: '',
       streamCharTimer: null,
+      viewportHeight: typeof window !== 'undefined' ? window.innerHeight : 0,
+      viewportWidth: typeof window !== 'undefined' ? window.innerWidth : 0,
       sessionLoadToken: 0,
       panelLoadToken: 0,
       messageLoadToken: 0
@@ -890,6 +866,35 @@ export default {
     showProductPagination() {
       return this.hasSelectedShop && this.productPageCount > 1
     },
+    activePanelItemCount() {
+      if (this.activeType === 'reply') {
+        return this.filteredReplyReviews.length
+      }
+      if (this.activeType === 'copywrite') {
+        return this.filteredProducts.length
+      }
+      if (this.activeType === 'analysis') {
+        return this.analysisCards.length
+      }
+      if (this.activeType === 'suggest') {
+        return this.suggestCards.length
+      }
+      return 0
+    },
+    assistantShellStyle() {
+      const width = Number(this.viewportWidth || 0)
+      if (width && width <= 1280) {
+        return {}
+      }
+      const viewportHeight = Number(this.viewportHeight || 0)
+      const availableHeight = Math.max(780, viewportHeight - 88)
+      const listDrivenHeight = 700 + Math.min(this.activePanelItemCount, 10) * 42
+      const targetHeight = Math.max(780, Math.min(listDrivenHeight, availableHeight))
+      return {
+        minHeight: targetHeight + 'px',
+        height: targetHeight + 'px'
+      }
+    },
     canInput() {
       return this.hasSelectedShop && !this.isStreaming && !this.isSessionLoading && !this.isMessageLoading
     },
@@ -987,9 +992,12 @@ export default {
     this.loadShopOptions()
   },
   mounted() {
+    this.handleWindowResize()
+    window.addEventListener('resize', this.handleWindowResize)
     document.addEventListener('click', this.handleDocumentClick)
   },
   beforeDestroy() {
+    window.removeEventListener('resize', this.handleWindowResize)
     document.removeEventListener('click', this.handleDocumentClick)
     if (this.activeStreamController) {
       this.activeStreamController.abort()
@@ -997,6 +1005,13 @@ export default {
     this.clearStreamTimer()
   },
   methods: {
+    handleWindowResize() {
+      if (typeof window === 'undefined') {
+        return
+      }
+      this.viewportHeight = window.innerHeight
+      this.viewportWidth = window.innerWidth
+    },
     async loadShopOptions() {
       this.isShopLoading = true
       try {
@@ -1446,6 +1461,12 @@ export default {
         this.resetInputHeight()
       })
     },
+    clearSelectedReview() {
+      this.selectedReviewId = null
+    },
+    clearSelectedProduct() {
+      this.selectedProductId = null
+    },
     resetInputHeight() {
       const input = this.$refs.messageInput
       if (!input) {
@@ -1495,14 +1516,23 @@ export default {
       if (Object.prototype.hasOwnProperty.call(this.productDetailCache, key)) {
         return this.productDetailCache[key]
       }
-      try {
-        const response = await getProduct(productId)
-        const product = this.normalizeProductItem(this.readResponseData(response) || {})
-        this.$set(this.productDetailCache, key, product)
-        return product
-      } catch (error) {
-        return null
+      if (Object.prototype.hasOwnProperty.call(this.productDetailRequests, key)) {
+        return this.productDetailRequests[key]
       }
+      const request = (async () => {
+        try {
+          const response = await getProduct(productId)
+          const product = this.normalizeProductItem(this.readResponseData(response) || {})
+          this.$set(this.productDetailCache, key, product)
+          return product
+        } catch (error) {
+          return null
+        } finally {
+          this.$delete(this.productDetailRequests, key)
+        }
+      })()
+      this.$set(this.productDetailRequests, key, request)
+      return await request
     },
     readMetricValue(source, keys) {
       if (!source || typeof source !== 'object' || !Array.isArray(keys)) {
@@ -1555,23 +1585,51 @@ export default {
       }
       return String(value)
     },
+    formatProductSalesDisplay(value) {
+      if (!Array.isArray(value) || !value.length) {
+        return '--'
+      }
+      return value
+        .map((item) => {
+          if (!item || typeof item !== 'object') {
+            return String(item || '').trim()
+          }
+          const name = item.productName || item.name || item.title || ''
+          const salesCount = Number(item.salesCount)
+          if (!name) {
+            return ''
+          }
+          if (isFinite(salesCount) && salesCount >= 0) {
+            return name + ' ' + salesCount + '单'
+          }
+          return name
+        })
+        .filter(Boolean)
+        .slice(0, 3)
+        .join('、') || '--'
+    },
     buildAnalysisCards(data) {
       const source = data && typeof data === 'object' ? data : {}
       return [
         {
           label: '订单数量',
-          value: this.formatMetricDisplay(this.readMetricValue(source, ['orderCount', 'orders', 'weekOrderCount', 'totalOrderCount']), { type: 'count' }),
+          value: this.formatMetricDisplay(this.readMetricValue(source, ['totalOrders', 'orderCount', 'orders', 'weekOrderCount', 'totalOrderCount']), { type: 'count' }),
           sub: '统计周期内已确认的订单数。'
         },
         {
           label: '预计营收',
-          value: this.formatMetricDisplay(this.readMetricValue(source, ['estimatedRevenue', 'revenue', 'gmv', 'turnover', 'income']), { type: 'currency' }),
+          value: this.formatMetricDisplay(this.readMetricValue(source, ['totalRevenue', 'estimatedRevenue', 'revenue', 'gmv', 'turnover', 'income']), { type: 'currency' }),
           sub: '当前选定范围内的预计营业收入。'
         },
         {
           label: '店铺评分',
           value: this.formatMetricDisplay(this.readMetricValue(source, ['avgScore', 'shopScore', 'rating', 'score']), { type: 'score' }),
           sub: '当前店铺在相应周期内的平均评分。'
+        },
+        {
+          label: '差评数量',
+          value: this.formatMetricDisplay(this.readMetricValue(source, ['badReviewCount', 'negativeReviewCount', 'badReviews']), { type: 'count' }),
+          sub: '当前统计周期内的差评条数。'
         }
       ]
     },
@@ -1580,22 +1638,32 @@ export default {
       return [
         {
           label: '订单数量',
-          value: this.formatMetricDisplay(this.readMetricValue(source, ['orderCount', 'orders', 'weekOrderCount', 'totalOrderCount']), { type: 'count' }),
+          value: this.formatMetricDisplay(this.readMetricValue(source, ['weekOrders', 'orderCount', 'orders', 'weekOrderCount', 'totalOrderCount']), { type: 'count' }),
           sub: '用于流量及转化率的改进建议。'
         },
         {
           label: '待处理评价',
-          value: this.formatMetricDisplay(this.readMetricValue(source, ['pendingReplyCount', 'pendingReviewCount', 'unrepliedCount', 'waitReplyCount']), { type: 'count' }),
+          value: this.formatMetricDisplay(this.readMetricValue(source, ['pendingReviewCount', 'pendingReplyCount', 'unrepliedCount', 'waitReplyCount']), { type: 'count' }),
           sub: '用于服务质量及售后建议。'
         },
         {
+          label: '平均评分',
+          value: this.formatMetricDisplay(this.readMetricValue(source, ['avgScore', 'shopScore', 'rating', 'score']), { type: 'score' }),
+          sub: '当前店铺在统计周期内的平均评分。'
+        },
+        {
+          label: '差评数量',
+          value: this.formatMetricDisplay(this.readMetricValue(source, ['badReviewCount', 'negativeReviewCount', 'badReviews']), { type: 'count' }),
+          sub: '当前统计周期内的差评条数。'
+        },
+        {
           label: '热销商品',
-          value: this.formatMetricDisplay(this.readMetricValue(source, ['hotProduct', 'hotProductName', 'topProduct', 'topProductName'])),
+          value: this.formatProductSalesDisplay(this.readMetricValue(source, ['hotProducts', 'hotProduct', 'topProducts', 'topProduct'])),
           sub: '当前周期内销量最高的商品。'
         },
         {
-          label: '滞销预警',
-          value: this.formatMetricDisplay(this.readMetricValue(source, ['slowProduct', 'slowProductName', 'slowMovingProduct', 'slowMovingProductName'])),
+          label: '滞销商品',
+          value: this.formatProductSalesDisplay(this.readMetricValue(source, ['slowProducts', 'slowProduct', 'slowMovingProducts', 'slowMovingProduct'])),
           sub: '近期销量较低，可能需要优化的商品。'
         }
       ]
@@ -1631,6 +1699,31 @@ export default {
       if (!session || !Array.isArray(session.messages)) {
         return
       }
+      const reviewIds = []
+      const productIds = []
+      const reviewIdMap = {}
+      const productIdMap = {}
+      session.messages.forEach((message) => {
+        if (!message || message.role !== 'user') {
+          return
+        }
+        const type = message.type || session.type || this.activeType
+        const reviewId = String(message.reviewId || '')
+        const productId = String(message.productId || '')
+        if (type === 'reply' && reviewId && !reviewIdMap[reviewId]) {
+          reviewIdMap[reviewId] = true
+          reviewIds.push(reviewId)
+        }
+        if (type === 'copywrite' && productId && !productIdMap[productId]) {
+          productIdMap[productId] = true
+          productIds.push(productId)
+        }
+      })
+      await Promise.all(
+        reviewIds.map((reviewId) => this.resolveReviewDetail(reviewId)).concat(
+          productIds.map((productId) => this.resolveProductDetail(productId))
+        )
+      )
       await Promise.all(
         session.messages.map(async (message) => {
           if (!message || message.role !== 'user') {
@@ -1703,7 +1796,10 @@ export default {
           return
         }
 
-        const rows = this.readResponseRows(response)
+        const rows = this.readResponseRows(response).filter((item) => {
+          const sourceType = Number(item && item.sourceType)
+          return sourceType === 2 || sourceType === 4
+        })
         const reviews = await Promise.all(rows.map(async (item) => {
           const plainContent = this.stripHtml(item.content)
           const score = Number(item.score || 0)
@@ -1834,7 +1930,7 @@ export default {
     async loadSuggestPanelData(shopId, loadToken) {
       this.isPanelLoading = true
       try {
-        const response = await getShopSuggest(shopId)
+        const response = await getShopSuggest(shopId, this.analysisRange)
         if (loadToken !== this.panelLoadToken) {
           return
         }
@@ -2055,6 +2151,7 @@ export default {
     async applyShopSelection(value) {
       this.sessionDropdownVisible = false
       this.currentSessionId = null
+      this.replyActionReview = null
       this.resetTextInputs()
       this.resetPanelState()
       if (value === null || value === undefined || value === '') {
@@ -2083,6 +2180,7 @@ export default {
         await this.runAfterAbort(async () => {
           this.activeType = type
           this.sessionDropdownVisible = false
+          this.replyActionReview = null
           this.resetTextInputs()
           this.selectedReviewId = null
           this.selectedProductId = null
@@ -2108,6 +2206,9 @@ export default {
         await this.runAfterAbort(async () => {
           this.resetTextInputs()
           this.currentSessionId = null
+          this.replyActionReview = null
+          this.selectedReviewId = null
+          this.selectedProductId = null
           this.sessionDropdownVisible = false
           this.$nextTick(() => {
             this.scrollToBottom()
@@ -2126,6 +2227,9 @@ export default {
         await this.runAfterAbort(async () => {
           this.sessionDropdownVisible = false
           this.currentSessionId = sessionId
+          this.replyActionReview = null
+          this.selectedReviewId = null
+          this.selectedProductId = null
           this.resetTextInputs()
           await this.loadSessionMessages(sessionId)
         })
@@ -2174,6 +2278,7 @@ export default {
           this.sessionDropdownVisible = false
           if (String(this.currentSessionId) === String(sessionId)) {
             this.currentSessionId = null
+            this.replyActionReview = null
             this.resetTextInputs()
             if (this.visibleSessions.length) {
               this.currentSessionId = this.visibleSessions[0].id
@@ -2251,6 +2356,7 @@ export default {
       }
       try {
         await this.runAfterAbort(async () => {
+          this.replyActionReview = null
           this.selectedReviewId = review.id
           this.activeType = 'reply'
           this.focusMessageInput()
@@ -2259,21 +2365,22 @@ export default {
       }
     },
     async handleRegenerateReply() {
-      if (!this.selectedReview) {
+      const targetReview = this.replyActionReview || this.selectedReview
+      if (!targetReview) {
         return
       }
       try {
         await this.runAfterAbort(async () => {
           const session = await this.ensureSessionForSend('reply')
-          const displayMessage = this.buildReplyAutoMessage(this.selectedReview)
+          const displayMessage = this.buildReplyAutoMessage(targetReview)
           await this.sendMessage('', {
             session: session,
             type: 'reply',
             displayMessage: displayMessage,
-            sessionTitle: this.buildReplySessionTitle(this.selectedReview),
+            sessionTitle: this.buildReplySessionTitle(targetReview),
             allowEmptyInstruction: true,
-            reviewId: this.selectedReview.id,
-            review: this.selectedReview
+            reviewId: targetReview.id,
+            review: targetReview
           })
         })
       } catch (error) {
@@ -2459,6 +2566,8 @@ export default {
         return item.role === 'user' && item.content
       })
       const now = Date.now()
+      const targetReview = settings.review || this.selectedReview
+      const targetProduct = settings.product || this.selectedProduct
 
       this.resetTextInputs()
       session.type = settings.type
@@ -2473,13 +2582,21 @@ export default {
         timeRange: settings.timeRange || '',
         contextQuote:
           settings.type === 'reply'
-            ? this.buildReviewQuote(settings.review || this.selectedReview)
+            ? this.buildReviewQuote(targetReview)
             : settings.type === 'copywrite'
-              ? this.buildProductQuote(settings.product || this.selectedProduct)
+              ? this.buildProductQuote(targetProduct)
               : settings.type === 'analysis' || settings.type === 'suggest'
                 ? this.buildRangeQuote(settings.type, settings.timeRange)
                 : null
       })
+
+      if (settings.type === 'reply') {
+        this.replyActionReview = targetReview ? Object.assign({}, targetReview) : null
+        this.selectedReviewId = null
+      }
+      if (settings.type === 'copywrite') {
+        this.selectedProductId = null
+      }
 
       if (!hasUserMessage) {
         session.title = settings.sessionTitle || this.buildSessionTitle(requestInstruction || displayMessage)
@@ -2525,7 +2642,8 @@ export default {
       }
     },
     async handleQuickReply() {
-      if (!this.selectedReview || !this.generatedReplyContent || this.isReplySubmitting) {
+      const targetReview = this.replyActionReview || this.selectedReview
+      if (!targetReview || !this.generatedReplyContent || this.isReplySubmitting) {
         return
       }
       const currentUserId = this.$store.getters.id
@@ -2538,7 +2656,7 @@ export default {
         await addComment({
           userId: currentUserId,
           sourceType: 7,
-          sourceId: this.selectedReview.id,
+          sourceId: targetReview.id,
           parentId: 0,
           answerId: null,
           images: '',
@@ -2548,6 +2666,7 @@ export default {
         this.$message.success('回复内容已成功发布到对应的评价条目中')
         this.currentSessionId = null
         this.selectedReviewId = null
+        this.replyActionReview = null
         this.resetTextInputs()
         await this.refreshActiveTabData(this.selectedShopId, 'reply', { preserveReplyPage: true })
         if (!this.replyReviews.length && this.replyPageNum > 1) {
@@ -2712,8 +2831,10 @@ export default {
 }
 
 .assistant-shell {
-  height: calc(100vh - 124px);
-  min-height: calc(100vh - 124px);
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 96px);
+  min-height: calc(100vh - 96px);
   border: 1px solid rgba(202, 210, 224, 0.9);
   border-radius: 22px;
   overflow: hidden;
@@ -3004,6 +3125,7 @@ export default {
 
 .assistant-body {
   display: flex;
+  flex: 1;
   height: calc(100% - 66px);
   min-height: 0;
   align-items: stretch;
@@ -3169,6 +3291,13 @@ export default {
   background: #fafbfd;
 }
 
+.panel-scroll-section {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: #fafbfd;
+}
+
 .panel-pagination {
   padding: 10px 12px 14px;
   border-top: 1px solid #eef2f7;
@@ -3201,6 +3330,14 @@ export default {
   font-size: 13px;
   line-height: 1.7;
   color: #98a2b3;
+}
+
+.panel-scroll-section .data-card-list {
+  border-bottom: none;
+}
+
+.panel-scroll-section .panel-note {
+  padding-top: 0;
 }
 
 .review-card,
@@ -3639,6 +3776,7 @@ export default {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 20px 22px;
 }
 
@@ -3939,10 +4077,36 @@ export default {
   gap: 12px;
 }
 
+.chat-context-main {
+  min-width: 0;
+  flex: 1;
+}
+
 .chat-context-title {
   font-size: 13px;
   font-weight: 700;
   color: #185fa5;
+}
+
+.chat-context-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #d6e3f1;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #7c8aa0;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.18s ease;
+}
+
+.chat-context-close:hover {
+  border-color: #b8cfe7;
+  color: #185fa5;
+  background: #f3f8fe;
 }
 
 .chat-context-meta {
@@ -4061,6 +4225,10 @@ export default {
   }
 
   .panel-list {
+    max-height: 320px;
+  }
+
+  .panel-scroll-section {
     max-height: 320px;
   }
 }

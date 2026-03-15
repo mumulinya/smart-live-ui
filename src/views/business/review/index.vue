@@ -3,13 +3,77 @@
     <el-card class="box-card mb-4" shadow="never">
         <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px" class="search-form">
         <el-form-item label="用户ID" prop="userId">
-            <el-input
+            <el-input v-if="false"
             v-model="queryParams.userId"
             placeholder="请输入用户ID"
             clearable
             style="width: 180px"
             @keyup.enter.native="handleQuery"
             />
+            <el-select
+            v-model="queryParams.userId"
+            placeholder="请输入用户名称搜索"
+            clearable
+            filterable
+            remote
+            reserve-keyword
+            :remote-method="searchUsers"
+            :loading="userSearchLoading"
+            style="width: 180px"
+            @focus="searchUsers('')"
+            @change="handleQuery"
+            >
+            <el-option
+                v-for="user in userList"
+                :key="user.id"
+                :label="user.nickName"
+                :value="user.id"
+            />
+            </el-select>
+        </el-form-item>
+        <el-form-item label="商品名称" prop="productId">
+            <el-select
+            v-model="queryParams.productId"
+            placeholder="请输入商品名称搜索"
+            clearable
+            filterable
+            remote
+            reserve-keyword
+            :remote-method="searchProducts"
+            :loading="productSearchLoading"
+            style="width: 200px"
+            @focus="searchProducts('')"
+            @change="handleQuery"
+            >
+            <el-option
+                v-for="product in productOptions"
+                :key="product.id"
+                :label="product.name"
+                :value="product.id"
+            />
+            </el-select>
+        </el-form-item>
+        <el-form-item label="店铺名称" prop="shopId">
+            <el-select
+            v-model="queryParams.shopId"
+            placeholder="请输入店铺名称搜索"
+            clearable
+            filterable
+            remote
+            reserve-keyword
+            :remote-method="searchShops"
+            :loading="shopSearchLoading"
+            style="width: 200px"
+            @focus="searchShops('')"
+            @change="handleQuery"
+            >
+            <el-option
+                v-for="shop in shopOptions"
+                :key="shop.id"
+                :label="shop.name"
+                :value="shop.id"
+            />
+            </el-select>
         </el-form-item>
         <el-form-item label="来源" prop="sourceType">
             <el-select v-model="queryParams.sourceType" placeholder="请选择来源" clearable style="width: 150px" @change="handleQuery">
@@ -372,8 +436,9 @@
 
 <script>
 import { listReview, getReview, delReview, addReview, updateReview, aiCreateReview, publishReview, publishAllReview } from "@/api/review/review"
-import { shopList } from "@/api/shop/shop"
-import { listProduct, getProduct } from "@/api/product"
+import { searchUserOptions } from "@/api/user/user"
+import { searchShopOptions } from "@/api/shop/shop"
+import { searchProductOptions } from "@/api/product"
 
 export default {
   name: "Review",
@@ -395,6 +460,12 @@ export default {
       reviewList: [],
       // 商品列表
       productList: [],
+      userList: [],
+      productOptions: [],
+      shopOptions: [],
+      userSearchLoading: false,
+      productSearchLoading: false,
+      shopSearchLoading: false,
       // 店铺列表
       shopList: [],
       // 弹出层标题
@@ -408,6 +479,8 @@ export default {
         pageNum: 1,
         pageSize: 10,
         userId: null,
+        productId: null,
+        shopId: null,
         sourceType: null,
         status: null,
         auditStatus: null,
@@ -452,6 +525,57 @@ export default {
       return typeMap[Number(sourceType)] || '未知'
     },
 
+    readSearchRows(response) {
+      if (response && Array.isArray(response.rows)) {
+        return response.rows
+      }
+      if (response && Array.isArray(response.data)) {
+        return response.data
+      }
+      return []
+    },
+    async searchUsers(keyword) {
+      this.userSearchLoading = true
+      try {
+        const response = await searchUserOptions(keyword || '')
+        this.userList = this.readSearchRows(response).map(item => ({
+          id: item.id,
+          nickName: item.nickName || item.userName || item.name || `用户${item.id}`
+        }))
+      } catch (error) {
+        this.userList = []
+      } finally {
+        this.userSearchLoading = false
+      }
+    },
+    async searchProducts(keyword) {
+      this.productSearchLoading = true
+      try {
+        const response = await searchProductOptions(keyword || '')
+        this.productOptions = this.readSearchRows(response).map(item => ({
+          id: item.id,
+          name: item.name || item.title || item.productName || `商品${item.id}`
+        }))
+      } catch (error) {
+        this.productOptions = []
+      } finally {
+        this.productSearchLoading = false
+      }
+    },
+    async searchShops(keyword) {
+      this.shopSearchLoading = true
+      try {
+        const response = await searchShopOptions(keyword || '')
+        this.shopOptions = this.readSearchRows(response).map(item => ({
+          id: item.id,
+          name: item.name || item.title || `店铺${item.id}`
+        }))
+      } catch (error) {
+        this.shopOptions = []
+      } finally {
+        this.shopSearchLoading = false
+      }
+    },
     getStatusText(status) {
       const statusMap = {
         0: '草稿',
@@ -501,6 +625,8 @@ export default {
         pageNum: this.queryParams.pageNum,
         pageSize: this.queryParams.pageSize,
         userId: this.queryParams.userId,
+        productId: this.queryParams.productId,
+        shopId: this.queryParams.shopId,
         sourceType: this.queryParams.sourceType,
         status: this.queryParams.status,
         auditStatus: this.queryParams.auditStatus
@@ -516,11 +642,20 @@ export default {
       listReview(queryData).then(response => {
         if (response.rows && response.rows.length > 0) {
           // 先设置评价列表基础数据
-          this.reviewList = response.rows
+          this.reviewList = (response.rows || []).filter(item => {
+            const sourceType = Number(item && item.sourceType)
+            return sourceType === 2 || sourceType === 4
+          })
           this.total = response.total
 
           // 然后加载关联数据并更新显示
-          this.loadRelatedData()
+          this.reviewList = this.reviewList.map(item => ({
+            ...item,
+            userName: item.nickName || item.userName || `用户${item.userId}`,
+            sourceName: item.sourceName || `${this.getSourceTypeText(item.sourceType)}${item.sourceId || ''}`
+          }))
+          this.total = response.total
+          this.loading = false
         } else {
           this.reviewList = []
           this.total = 0
@@ -644,6 +779,8 @@ export default {
         pageNum: 1,
         pageSize: 10,
         userId: null,
+        productId: null,
+        shopId: null,
         sourceType: null,
         status: null,
         auditStatus: null,

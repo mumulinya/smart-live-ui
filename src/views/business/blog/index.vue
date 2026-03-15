@@ -24,11 +24,16 @@
             placeholder="请选择店铺"
             clearable
             filterable
-            style="width: 180px"
+            remote
+            reserve-keyword
+            :remote-method="searchShops"
+            :loading="shopSearchLoading"
+            style="width: 200px"
+            @focus="searchShops('')"
             @change="handleQuery"
             >
             <el-option
-                v-for="shop in shopList"
+                v-for="shop in shopSearchOptions"
                 :key="shop.id"
                 :label="shop.name"
                 :value="shop.id"
@@ -41,11 +46,16 @@
             placeholder="请选择用户"
             clearable
             filterable
-            style="width: 180px"
+            remote
+            reserve-keyword
+            :remote-method="searchUsers"
+            :loading="userSearchLoading"
+            style="width: 200px"
+            @focus="searchUsers('')"
             @change="handleQuery"
             >
             <el-option
-                v-for="user in userList"
+                v-for="user in userSearchOptions"
                 :key="user.id"
                 :label="user.nickName"
                 :value="user.id"
@@ -386,9 +396,8 @@
 
 <script>
 import { listBlog, getBlog, delBlog, addBlog, updateBlog,publish,allPublish } from "@/api/blog/blog"
-import { listUser,userList } from "@/api/user/user"
-import { listShop,  shopList} from "@/api/shop/shop"
-import { shopTypeList } from "@/api/shop/shop"
+import { userList, searchUserOptions } from "@/api/user/user"
+import { shopList, searchShopOptions, shopTypeList } from "@/api/shop/shop"
 
 export default {
   name: "Blog",
@@ -410,12 +419,16 @@ export default {
       blogList: [],
       // 用户列表
       userList: [],
+      userSearchOptions: [],
       // 店铺列表
       shopList: [],
+      shopSearchOptions: [],
       // 店铺类型列表
       shopTypeList: [],
       // 过滤后的店铺列表（根据类型筛选）
       filteredShopList: [],
+      userSearchLoading: false,
+      shopSearchLoading: false,
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -480,6 +493,34 @@ export default {
     this.getShopTypeList()
   },
   methods: {
+    readSearchRows(response) {
+      if (Array.isArray(response?.rows)) return response.rows
+      if (Array.isArray(response?.data)) return response.data
+      if (Array.isArray(response)) return response
+      return []
+    },
+    async searchUsers(keyword) {
+      this.userSearchLoading = true
+      try {
+        const response = await searchUserOptions(keyword)
+        this.userSearchOptions = this.readSearchRows(response)
+      } catch (error) {
+        this.userSearchOptions = []
+      } finally {
+        this.userSearchLoading = false
+      }
+    },
+    async searchShops(keyword) {
+      this.shopSearchLoading = true
+      try {
+        const response = await searchShopOptions(keyword)
+        this.shopSearchOptions = this.readSearchRows(response)
+      } catch (error) {
+        this.shopSearchOptions = []
+      } finally {
+        this.shopSearchLoading = false
+      }
+    },
     /** 查询博客列表 */
     getList() {
       this.loading = true
@@ -493,12 +534,14 @@ export default {
     getUserList() {
       userList().then(response => {
         this.userList = response.data || []
+        this.userSearchOptions = this.userList.slice(0, 20)
       })
     },
     /** 查询店铺列表 */
     getShopList() {
       shopList().then(response => {
         this.shopList = response.data || []
+        this.shopSearchOptions = this.shopList.slice(0, 20)
         this.filteredShopList = [...this.shopList]
       })
     },

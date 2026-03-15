@@ -375,7 +375,7 @@
                        <div class="stat-divider"></div>
                         <div class="stat-item">
                            <span class="label">评论</span>
-                           <span class="val">{{ detailForm.comments || 0 }}</span>
+                           <span class="val">{{ detailForm.reviews || 0 }}</span>
                        </div>
                        <div class="stat-divider"></div>
                         <div class="stat-item">
@@ -555,7 +555,7 @@ export default {
         y: null,
         avgPrice: null,
         sold: null,
-        comments: null,
+        reviews: null,
         score: null,
         openHours: null,
         createTime: null,
@@ -1012,7 +1012,7 @@ export default {
         y: null,
         avgPrice: null,
         sold: null,
-        comments: null,
+        reviews: null,
         score: null,
         openHours: null,
         createTime: null,

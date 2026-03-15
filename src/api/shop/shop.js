@@ -70,10 +70,11 @@ export function getShopAnalysis(shopId, timeRange = 'week') {
     params: { timeRange }
   })
 }
-export function getShopSuggest(shopId) {
+export function getShopSuggest(shopId, timeRange = 'week') {
   return request({
     url: '/shop/suggest/' + shopId,
-    method: 'get'
+    method: 'get',
+    params: { timeRange }
   })
 }
 export function allPublish(){
@@ -86,5 +87,13 @@ export function publish(id){
   return request({
     url: '/shop/publish/'+id,
     method: 'post',
+  })
+}
+
+export function searchShopOptions(keyword) {
+  return request({
+    url: '/shop/search',
+    method: 'get',
+    params: { keyword }
   })
 }

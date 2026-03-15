@@ -8,11 +8,16 @@
             placeholder="请选择店铺"
             clearable
             filterable
+            remote
+            reserve-keyword
+            :remote-method="searchShops"
+            :loading="shopSearchLoading"
             style="width: 200px"
+            @focus="searchShops('')"
             @change="handleQuery"
             >
             <el-option
-                v-for="shop in shopList"
+                v-for="shop in shopOptions"
                 :key="shop.id"
                 :label="shop.name"
                 :value="shop.id"
@@ -258,11 +263,16 @@
             placeholder="请选择店铺"
             style="width: 100%"
             filterable
+            remote
+            reserve-keyword
             multiple
+            :remote-method="searchShops"
+            :loading="shopSearchLoading"
+            @focus="searchShops('')"
             :disabled="!!form.id"
           >
             <el-option
-              v-for="shop in shopList"
+              v-for="shop in shopOptions"
               :key="shop.id"
               :label="shop.name"
               :value="shop.id"
@@ -509,7 +519,7 @@
 
 <script>
 import { listProduct, getProduct, delProduct, addProduct, updateProduct, changeProductStatus, publishProduct, publishAllProduct } from "@/api/product"
-import { listShop,  shopList} from "@/api/shop/shop"
+import { shopList, searchShopOptions } from "@/api/shop/shop"
 
 export default {
   name: "Product",
@@ -563,6 +573,8 @@ export default {
       productList: [],
       // 店铺列表
       shopList: [],
+      shopOptions: [],
+      shopSearchLoading: false,
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -674,6 +686,47 @@ export default {
     this.getList()
   },
   methods: {
+    readSearchRows(response) {
+      if (response && Array.isArray(response.rows)) {
+        return response.rows
+      }
+      if (response && Array.isArray(response.data)) {
+        return response.data
+      }
+      return []
+    },
+    ensureShopOptions(shopIds) {
+      const ids = Array.isArray(shopIds) ? shopIds : [shopIds]
+      ids.forEach((shopId) => {
+        const key = String(shopId || '')
+        if (!key) {
+          return
+        }
+        const exists = this.shopOptions.some(item => String(item.id) === key)
+        if (exists) {
+          return
+        }
+        const shop = this.shopList.find(item => String(item.id) === key)
+        if (shop) {
+          this.shopOptions.unshift(shop)
+        }
+      })
+      this.shopOptions = this.shopOptions.slice(0, 50)
+    },
+    async searchShops(keyword) {
+      this.shopSearchLoading = true
+      try {
+        const response = await searchShopOptions(keyword || '')
+        this.shopOptions = this.readSearchRows(response).map(item => ({
+          id: item.id,
+          name: item.name || item.title || `店铺${item.id}`
+        }))
+      } catch (error) {
+        this.shopOptions = []
+      } finally {
+        this.shopSearchLoading = false
+      }
+    },
     getBizStatusText(status) {
       const map = { 1: '已上架', 2: '已下架', 3: '已过期' }
       return map[Number(status)] || '-'
@@ -738,9 +791,11 @@ export default {
     getShopList() {
       shopList().then(response => {
         this.shopList = response.data || []
+        this.shopOptions = this.shopList.slice(0, 20)
       }).catch(error => {
         console.error('获取店铺列表失败:', error)
         this.shopList = []
+        this.shopOptions = []
       })
     },
     // 取消按钮
@@ -832,6 +887,7 @@ export default {
           useEndTime: response.data.useEndTime,
           validDays: response.data.validDays
         }
+        this.ensureShopOptions(shopIdArray)
         if (this.form.useStartTime && this.form.useEndTime) {
           this.validityRange = [this.form.useStartTime, this.form.useEndTime]
         }

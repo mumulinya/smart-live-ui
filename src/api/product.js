@@ -77,3 +77,11 @@ export function addProductStock(id) {
         method: 'post'
     })
 }
+
+export function searchProductOptions(keyword) {
+    return request({
+        url: '/product/search',
+        method: 'get',
+        params: { keyword }
+    })
+}

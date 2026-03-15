@@ -1,14 +1,19 @@
-<template>
+﻿<template>
   <div class="app-container">
     <el-card class="box-card mb-4" shadow="never">
         <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px" class="search-form">
         <el-form-item label="用户名称" prop="userId">
             <el-select
             v-model="queryParams.userId"
-            placeholder="请选择用户"
+            placeholder="请输入用户名称搜索"
             clearable
             filterable
+            remote
+            reserve-keyword
+            :remote-method="searchUsers"
+            :loading="userSearchLoading"
             style="width: 180px"
+            @focus="searchUsers('')"
             @change="handleQuery"
             >
             <el-option
@@ -19,10 +24,33 @@
             />
             </el-select>
         </el-form-item>
+        <el-form-item label="博客标题" prop="blogId">
+            <el-select
+            v-model="queryParams.blogId"
+            placeholder="请输入博客标题搜索"
+            clearable
+            filterable
+            remote
+            reserve-keyword
+            :remote-method="searchBlogs"
+            :loading="blogSearchLoading"
+            style="width: 200px"
+            @focus="searchBlogs('')"
+            @change="handleQuery"
+            >
+            <el-option
+                v-for="blog in blogOptions"
+                :key="blog.id"
+                :label="blog.title"
+                :value="blog.id"
+            />
+            </el-select>
+        </el-form-item>
         <el-form-item label="来源" prop="sourceType">
             <el-select v-model="queryParams.sourceType" placeholder="请选择来源" clearable style="width: 150px" @change="handleQuery">
-            <el-option label="博客" value="1" />
-            <el-option label="店铺" value="2" />
+            <el-option label="博客" value="3" />
+            <el-option label="评论" value="5" />
+            <el-option label="评价" value="7" />
             </el-select>
         </el-form-item>
         <el-form-item label="状态" prop="status">
@@ -99,7 +127,7 @@
              <template slot-scope="scope">
                 <div class="source-info">
                    <div class="source-line">
-                       <el-tag size="mini" :type="scope.row.sourceType === '1' ? 'primary' : 'success'" effect="plain" class="type-tag">
+                       <el-tag size="mini" :type="Number(scope.row.sourceType) === 3 ? 'primary' : 'success'" effect="plain" class="type-tag">
                            {{ getSourceTypeText(scope.row.sourceType) }}
                        </el-tag>
                        <span class="source-name">{{ scope.row.sourceName || '--' }}</span>
@@ -176,7 +204,17 @@
     <el-dialog :title="title" :visible.sync="open" width="600px" append-to-body custom-class="comment-edit-dialog">
       <el-form ref="form" :model="form" :rules="rules" label-width="80px" class="edit-form">
         <el-form-item label="用户" prop="userId">
-          <el-select v-model="form.userId" placeholder="请选择用户" style="width: 100%" filterable>
+          <el-select
+            v-model="form.userId"
+            placeholder="请输入用户名称搜索"
+            style="width: 100%"
+            filterable
+            remote
+            reserve-keyword
+            :remote-method="searchUsers"
+            :loading="userSearchLoading"
+            @focus="searchUsers('')"
+          >
             <el-option
               v-for="user in userList"
               :key="user.id"
@@ -189,8 +227,9 @@
              <el-col :span="12">
                  <el-form-item label="来源类型" prop="sourceType">
                 <el-select v-model="form.sourceType" placeholder="请选择来源类型" style="width: 100%">
-                    <el-option label="博客" value="1" />
-                    <el-option label="店铺" value="2" />
+                    <el-option label="博客" value="3" />
+                    <el-option label="评论" value="5" />
+                    <el-option label="评价" value="7" />
                 </el-select>
                 </el-form-item>
              </el-col>
@@ -243,7 +282,7 @@
            
            <div class="source-ref">
                <span class="label">回复于:</span>
-               <el-tag size="mini" :type="detailForm.sourceType === '1' ? 'primary' : 'success'" effect="plain">
+               <el-tag size="mini" :type="Number(detailForm.sourceType) === 3 ? 'primary' : 'success'" effect="plain">
                     {{ getSourceTypeText(detailForm.sourceType) }}
                </el-tag>
                <span class="ref-name">{{ detailForm.sourceName }}</span>
@@ -279,10 +318,15 @@
 </template>
 
 <script>
-import { listComment, getComment, delComment, addComment, updateComment } from "@/api/comment/comment"
-import {listUser, userList} from "@/api/user/user"
-import {blogList, listBlog} from "@/api/blog/blog"
-import { shopList } from "@/api/shop/shop"
+import {
+  listComment,
+  getComment,
+  delComment,
+  addComment,
+  updateComment
+} from "@/api/comment/comment"
+import { searchUserOptions } from "@/api/user/user"
+import { searchBlogOptions } from "@/api/blog/blog"
 
 export default {
   name: "Comment",
@@ -304,10 +348,11 @@ export default {
       commentList: [],
       // 用户列表
       userList: [],
-      // 博客列表
-      blogList: [],
-      // 店铺列表
-      shopList: [],
+      // 博客选项
+      blogOptions: [],
+      // 远程搜索状态
+      userSearchLoading: false,
+      blogSearchLoading: false,
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -319,6 +364,7 @@ export default {
         pageNum: 1,
         pageSize: 10,
         userId: null,
+        blogId: null,
         sourceType: null,
         status: null,
         auditStatus: null,
@@ -351,33 +397,65 @@ export default {
     }
   },
   created() {
-    // 先加载用户列表，再加载评论列表
-    this.loadUserList()
+    this.getList()
   },
   methods: {
-    /** 加载用户列表 */
-    async loadUserList() {
-      try {
-        const response = await userList()
-        this.userList = response.data || []
-        // 用户列表加载完成后，再加载评论列表
-        this.getList()
-      } catch (error) {
-        console.error('加载用户列表失败:', error)
-        this.userList = []
-        this.loading = false
-      }
-    },
-
     /** 获取来源类型文本 */
     getSourceTypeText(sourceType) {
       const typeMap = {
-        '1': '博客',
-        '2': '店铺'
+        3: '博客',
+        5: '评论',
+        7: '评价'
       }
-      return typeMap[sourceType] || '未知'
+      return typeMap[Number(sourceType)] || '未知'
     },
-
+    readSearchRows(response) {
+      if (response && Array.isArray(response.rows)) {
+        return response.rows
+      }
+      if (response && Array.isArray(response.data)) {
+        return response.data
+      }
+      return []
+    },
+    mergeOption(list, option, keys) {
+      if (!option || option.id === null || option.id === undefined || option.id === '') {
+        return list
+      }
+      const exists = list.some(item => String(item.id) === String(option.id))
+      if (exists) {
+        return list
+      }
+      return [option].concat(list).slice(0, 20)
+    },
+    async searchUsers(keyword) {
+      this.userSearchLoading = true
+      try {
+        const response = await searchUserOptions(keyword || '')
+        this.userList = this.readSearchRows(response).map(item => ({
+          id: item.id,
+          nickName: item.nickName || item.userName || item.name || `用户${item.id}`
+        }))
+      } catch (error) {
+        this.userList = []
+      } finally {
+        this.userSearchLoading = false
+      }
+    },
+    async searchBlogs(keyword) {
+      this.blogSearchLoading = true
+      try {
+        const response = await searchBlogOptions(keyword || '')
+        this.blogOptions = this.readSearchRows(response).map(item => ({
+          id: item.id,
+          title: item.title || item.name || `博客${item.id}`
+        }))
+      } catch (error) {
+        this.blogOptions = []
+      } finally {
+        this.blogSearchLoading = false
+      }
+    },
     getStatusText(status) {
       const statusMap = {
         '0': '正常',
@@ -421,6 +499,7 @@ export default {
         pageNum: this.queryParams.pageNum,
         pageSize: this.queryParams.pageSize,
         userId: this.queryParams.userId,
+        blogId: this.queryParams.blogId,
         sourceType: this.queryParams.sourceType,
         status: this.queryParams.status,
         auditStatus: this.queryParams.auditStatus
@@ -435,12 +514,17 @@ export default {
 
       listComment(queryData).then(response => {
         if (response.rows && response.rows.length > 0) {
-          // 先设置评论列表基础数据
-          this.commentList = response.rows
+          this.commentList = (response.rows || []).filter(item => {
+            const sourceType = Number(item && item.sourceType)
+            return sourceType === 3 || sourceType === 5 || sourceType === 7
+          }).map(item => {
+            return Object.assign({}, item, {
+              userName: item.nickName || item.userName || `用户${item.userId}`,
+              sourceName: item.sourceName || `${this.getSourceTypeText(item.sourceType)}${item.sourceId || ''}`
+            })
+          })
           this.total = response.total
-
-          // 然后加载关联数据并更新显示
-          this.loadRelatedData()
+          this.loading = false
         } else {
           this.commentList = []
           this.total = 0
@@ -450,47 +534,6 @@ export default {
         console.error('获取评论列表失败:', error)
         this.loading = false
       })
-    },
-
-    /** 加载关联数据并更新显示 */
-    async loadRelatedData() {
-      try {
-        // 并行加载博客和店铺列表
-        const [blogsResponse, shopsResponse] = await Promise.all([
-          blogList(),
-          shopList()
-        ])
-
-        this.blogList = blogsResponse.data || []
-        this.shopList = shopsResponse.data || []
-
-        // 更新评论列表的显示数据
-        this.commentList = this.commentList.map(item => {
-          // 设置用户名称
-          const user = this.userList.find(user => user.id == item.userId)
-          item.userName = user ? user.nickName : `用户${item.userId}`
-
-          // 设置来源名称 - 严格按照你的逻辑
-          if (item.sourceType == '1') {
-            // 博客评论 - 从博客列表查询
-            const blog = this.blogList.find(blog => blog.id == item.sourceId)
-            item.sourceName = blog ? blog.title : `博客${item.sourceId}`
-          } else if (item.sourceType == '2') {
-            // 店铺评论 - 从店铺列表查询
-            const shop = this.shopList.find(shop => shop.id == item.sourceId)
-            item.sourceName = shop ? shop.name : `店铺${item.sourceId}`
-          } else {
-            item.sourceName = `未知类型${item.sourceId}`
-          }
-
-          return item
-        })
-
-        this.loading = false
-      } catch (error) {
-        console.error('加载关联数据失败:', error)
-        this.loading = false
-      }
     },
 
     /** 查看详情按钮操作 */
@@ -539,6 +582,7 @@ export default {
         pageNum: 1,
         pageSize: 10,
         userId: null,
+        blogId: null,
         sourceType: null,
         status: null,
         auditStatus: null,
@@ -566,6 +610,10 @@ export default {
       const id = row.id || this.ids
       getComment(id).then(response => {
         this.form = response.data
+        this.userList = this.mergeOption(this.userList, {
+          id: this.form.userId,
+          nickName: this.form.nickName || this.form.userName || `用户${this.form.userId}`
+        })
         this.open = true
         this.title = "修改评论"
       })
@@ -761,3 +809,5 @@ export default {
     }
 }
 </style>
+
+
