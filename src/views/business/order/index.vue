@@ -1,15 +1,20 @@
-<template>
+﻿<template>
   <div class="app-container">
     <el-card class="box-card mb-4" shadow="never">
         <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px" class="search-form">
-        <el-form-item label="用户名" prop="userId">
+                <el-form-item label="用户名" prop="userId">
             <el-select
             v-model="queryParams.userId"
-            placeholder="请选择用户"
+            placeholder="请输入用户名称搜索"
             clearable
             filterable
-            style="width: 180px"
-             @change="handleQuery"
+            remote
+            reserve-keyword
+            :remote-method="searchUsers"
+            :loading="userSearchLoading"
+            style="width: 200px"
+            @focus="searchUsers('')"
+            @change="handleQuery"
             >
             <el-option
                 v-for="user in userList"
@@ -19,14 +24,19 @@
             />
             </el-select>
         </el-form-item>
-        <el-form-item label="优惠券" prop="voucherId">
+                <el-form-item label="商品名称" prop="voucherId">
             <el-select
             v-model="queryParams.voucherId"
-            placeholder="请选择优惠券"
+            placeholder="请输入商品名称搜索"
             clearable
             filterable
-            style="width: 180px"
-             @change="handleQuery"
+            remote
+            reserve-keyword
+            :remote-method="searchProducts"
+            :loading="productSearchLoading"
+            style="width: 200px"
+            @focus="searchProducts('')"
+            @change="handleQuery"
             >
             <el-option
                 v-for="voucher in voucherList"
@@ -36,14 +46,19 @@
             />
             </el-select>
         </el-form-item>
-        <el-form-item label="店铺" prop="shopId">
+                <el-form-item label="店铺名称" prop="shopId">
             <el-select
             v-model="queryParams.shopId"
-            placeholder="请选择店铺"
+            placeholder="请输入店铺名称搜索"
             clearable
             filterable
-            style="width: 180px"
-             @change="handleQuery"
+            remote
+            reserve-keyword
+            :remote-method="searchShops"
+            :loading="shopSearchLoading"
+            style="width: 200px"
+            @focus="searchShops('')"
+            @change="handleQuery"
             >
             <el-option
                 v-for="shop in shopList"
@@ -130,8 +145,8 @@
         <el-table-column label="商品信息" min-width="250">
              <template slot-scope="scope">
                 <div class="order-goods-info">
-                   <div class="voucher-title">{{ getVoucherTitle(scope.row.voucherId) }}</div>
-                   <div class="shop-name"><i class="el-icon-shop"></i> {{ getShopName(scope.row.shopId) }}</div>
+                   <div class="voucher-title">{{ scope.row.productName || getVoucherTitle(scope.row.voucherId) }}</div>
+                   <div class="shop-name"><i class="el-icon-shop"></i> {{ scope.row.shopName || getShopName(scope.row.shopId) }}</div>
                 </div>
             </template>
         </el-table-column>
@@ -139,13 +154,13 @@
             <template slot-scope="scope">
             <div class="user-info">
                 <i class="el-icon-user"></i>
-                <span>{{ getUserName(scope.row.userId) }}</span>
+                <span>{{ scope.row.userName || getUserName(scope.row.userId) }}</span>
             </div>
             </template>
         </el-table-column>
-        <el-table-column label="支付金额" align="center" prop="amount" width="120">
+        <el-table-column label="支付金额" align="center" prop="payAmount" width="120">
             <template slot-scope="scope">
-            <span class="price-text">¥{{ scope.row.amount || '0.00' }}</span>
+            <span class="price-text">¥{{ scope.row.payAmount || scope.row.amount || '0.00' }}</span>
             </template>
         </el-table-column>
          <el-table-column label="支付方式" align="center" prop="payType" width="100">
@@ -220,8 +235,18 @@
       <el-form ref="form" :model="form" :rules="rules" label-width="100px" class="edit-form">
         
         <div class="form-section-title">订单关联</div>
-        <el-form-item label="用户" prop="userId">
-          <el-select v-model="form.userId" placeholder="请选择用户" style="width: 100%" filterable>
+                <el-form-item label="用户" prop="userId">
+          <el-select
+            v-model="form.userId"
+            placeholder="请输入用户名称搜索"
+            style="width: 100%"
+            filterable
+            remote
+            reserve-keyword
+            :remote-method="searchUsers"
+            :loading="userSearchLoading"
+            @focus="searchUsers('')"
+          >
             <el-option
               v-for="user in userList"
               :key="user.id"
@@ -230,8 +255,18 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="优惠券" prop="voucherId">
-          <el-select v-model="form.voucherId" placeholder="请选择优惠券" style="width: 100%" filterable>
+                <el-form-item label="商品" prop="voucherId">
+          <el-select
+            v-model="form.voucherId"
+            placeholder="请输入商品名称搜索"
+            style="width: 100%"
+            filterable
+            remote
+            reserve-keyword
+            :remote-method="searchProducts"
+            :loading="productSearchLoading"
+            @focus="searchProducts('')"
+          >
             <el-option
               v-for="voucher in voucherList"
               :key="voucher.id"
@@ -240,8 +275,18 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="店铺" prop="shopId">
-          <el-select v-model="form.shopId" placeholder="请选择店铺" style="width: 100%" filterable>
+                <el-form-item label="店铺" prop="shopId">
+          <el-select
+            v-model="form.shopId"
+            placeholder="请输入店铺名称搜索"
+            style="width: 100%"
+            filterable
+            remote
+            reserve-keyword
+            :remote-method="searchShops"
+            :loading="shopSearchLoading"
+            @focus="searchShops('')"
+          >
             <el-option
               v-for="shop in shopList"
               :key="shop.id"
@@ -254,9 +299,9 @@
         <div class="form-section-title">支付与状态</div>
         <el-row>
              <el-col :span="12">
-                 <el-form-item label="订单金额" prop="amount">
+                 <el-form-item label="支付金额" prop="payAmount">
                     <el-input-number
-                        v-model="form.amount"
+                        v-model="form.payAmount"
                         :precision="2"
                         :min="0"
                         :step="1"
@@ -346,8 +391,8 @@
                 <div class="sub-status">订单号: {{ currentOrder.id }}</div>
             </div>
             <div class="status-amount">
-                <span class="label">订单金额</span>
-                <span class="amount">¥{{ currentOrder.amount }}</span>
+                <span class="label">支付金额</span>
+                <span class="amount">¥{{ currentOrder.payAmount || currentOrder.amount }}</span>
             </div>
        </div>
 
@@ -377,12 +422,12 @@
                <div class="detail-card">
                    <div class="card-title">商品信息</div>
                    <div class="info-row">
-                       <span class="label">优惠券:</span>
-                       <span class="val">{{ getVoucherTitle(currentOrder.voucherId) }}</span>
+                        <span class="label">商品:</span>
+                       <span class="val">{{ currentOrder.productName || getVoucherTitle(currentOrder.voucherId) }}</span>
                    </div>
                     <div class="info-row">
                        <span class="label">所属店铺:</span>
-                       <span class="val">{{ getShopName(currentOrder.shopId) }}</span>
+                       <span class="val">{{ currentOrder.shopName || getShopName(currentOrder.shopId) }}</span>
                    </div>
                </div>
 
@@ -393,8 +438,8 @@
                        <span class="val">{{ getPayTypeText(currentOrder.payType) }}</span>
                    </div>
                     <div class="info-row">
-                       <span class="label">支付金额:</span>
-                       <span class="val price">¥{{ currentOrder.amount }}</span>
+                        <span class="label">支付金额:</span>
+                        <span class="val price">¥{{ currentOrder.payAmount || currentOrder.amount }}</span>
                    </div>
                </div>
 
@@ -402,7 +447,7 @@
                    <div class="card-title">用户信息</div>
                    <div class="info-row">
                        <span class="label">用户名:</span>
-                       <span class="val">{{ getUserName(currentOrder.userId) }}</span>
+                       <span class="val">{{ currentOrder.userName || getUserName(currentOrder.userId) }}</span>
                    </div>
                </div>
            </div>
@@ -417,9 +462,9 @@
 
 <script>
 import { listOrder, getOrder, delOrder, addOrder, updateOrder } from "@/api/order/order"
-import {listUser, userList} from "@/api/user/user"
-import {listProduct} from "@/api/product"
-import {listShop, shopList} from "@/api/shop/shop"
+import { searchUserOptions } from "@/api/user/user"
+import { searchProductOptions } from "@/api/product"
+import { searchShopOptions } from "@/api/shop/shop"
 
 export default {
   name: "Order",
@@ -445,6 +490,9 @@ export default {
       voucherList: [],
       // 店铺列表
       shopList: [],
+      userSearchLoading: false,
+      productSearchLoading: false,
+      shopSearchLoading: false,
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -472,7 +520,7 @@ export default {
           { required: true, message: "请选择用户", trigger: "change" }
         ],
         voucherId: [
-          { required: true, message: "请选择优惠券", trigger: "change" }
+          { required: true, message: "请选择商品", trigger: "change" }
         ],
         shopId: [
           { required: true, message: "请选择店铺", trigger: "change" }
@@ -483,72 +531,143 @@ export default {
         status: [
           { required: true, message: "请选择订单状态", trigger: "change" }
         ],
-        amount: [
-          { required: true, message: "请输入订单金额", trigger: "blur" }
+        payAmount: [
+          { required: true, message: "请输入支付金额", trigger: "blur" }
         ]
       }
     }
   },
-  created() {
-    this.getList()
-    this.getUserList()
-    this.getVoucherList()
-    this.getShopList()
-  },
+created() {
+this.getList()
+},
   methods: {
+    normalizeOrderItem(order) {
+      if (!order) return {}
+      return {
+        ...order,
+        payAmount: order.payAmount !== undefined && order.payAmount !== null ? order.payAmount : order.amount
+      }
+    },
+    readSearchRows(response) {
+      if (response && Array.isArray(response.rows)) return response.rows
+      if (response && Array.isArray(response.data)) return response.data
+      if (Array.isArray(response)) return response
+      return []
+    },
+    mergeOption(list, option) {
+      if (!option || option.id === null || option.id === undefined || option.id === '') {
+        return list
+      }
+      const exists = list.some(item => String(item.id) === String(option.id))
+      if (exists) {
+        return list
+      }
+      return [option].concat(list).slice(0, 20)
+    },
+    async searchUsers(keyword) {
+      this.userSearchLoading = true
+      try {
+        const response = await searchUserOptions(keyword || '')
+        this.userList = this.readSearchRows(response).map(item => ({
+          id: item.id,
+          nickName: item.nickName || item.userName || item.name || `用户${item.id}`
+        }))
+      } catch (error) {
+        this.userList = []
+      } finally {
+        this.userSearchLoading = false
+      }
+    },
+    async searchProducts(keyword) {
+      this.productSearchLoading = true
+      try {
+        const response = await searchProductOptions(keyword || '')
+        this.voucherList = this.readSearchRows(response).map(item => ({
+          id: item.id,
+          title: item.name || item.title || item.productName || `商品${item.id}`
+        }))
+      } catch (error) {
+        this.voucherList = []
+      } finally {
+        this.productSearchLoading = false
+      }
+    },
+    async searchShops(keyword) {
+      this.shopSearchLoading = true
+      try {
+        const response = await searchShopOptions(keyword || '')
+        this.shopList = this.readSearchRows(response).map(item => ({
+          id: item.id,
+          name: item.name || item.shopName || item.title || `店铺${item.id}`
+        }))
+      } catch (error) {
+        this.shopList = []
+      } finally {
+        this.shopSearchLoading = false
+      }
+    },
     /** 查询优惠券订单表列表 */
     getList() {
       this.loading = true
       listOrder(this.queryParams).then(response => {
-        this.orderList = response.rows
+        const rows = (response.rows || []).map(item => this.normalizeOrderItem(item))
+        rows.forEach(item => {
+          this.userList = this.mergeOption(this.userList, {
+            id: item.userId,
+            nickName: item.userName || item.nickName || item.userNickname || `用户${item.userId}`
+          })
+          this.voucherList = this.mergeOption(this.voucherList, {
+            id: item.voucherId,
+            title: item.productName || item.voucherTitle || item.title || `商品${item.voucherId}`
+          })
+          this.shopList = this.mergeOption(this.shopList, {
+            id: item.shopId,
+            name: item.shopName || `店铺${item.shopId}`
+          })
+        })
+        this.orderList = rows
         this.total = response.total
         this.loading = false
       })
     },
     /** 获取用户列表 */
     getUserList() {
-      userList().then(response => {
-        this.userList = response.data
-      })
+      return this.searchUsers('')
     },
     /** 获取优惠券列表 */
     getVoucherList() {
-      listProduct().then(response => {
-        this.voucherList = response.data|| []
-      })
+      return this.searchProducts('')
     },
     /** 获取店铺列表 */
     getShopList() {
-      shopList().then(response => {
-        this.shopList = response.data|| []
-      })
+      return this.searchShops('')
     },
     /** 根据用户ID获取用户名 */
     getUserName(userId) {
-      const user = this.userList.find(item => item.id === userId)
+      const user = this.userList.find(item => String(item.id) === String(userId))
       return user ? (user.nickName || user.userName) : '未知用户'
     },
     /** 根据优惠券ID获取优惠券标题 */
     getVoucherTitle(voucherId) {
-      const voucher = this.voucherList.find(item => item.id === voucherId)
-      return voucher ? voucher.title : '未知优惠券'
+      const voucher = this.voucherList.find(item => String(item.id) === String(voucherId))
+      return voucher ? voucher.title : '未知商品'
     },
     /** 根据优惠券ID获取优惠券详细信息 */
     getVoucherInfo(voucherId) {
-      const voucher = this.voucherList.find(item => item.id === voucherId)
-      if (!voucher) return '未知优惠券'
-      return `优惠券: ${voucher.title}, 类型: ${voucher.type === 1 ? '代金券' : '折扣券'}, 面值: ${voucher.faceValue || voucher.discount}`
+      const voucher = this.voucherList.find(item => String(item.id) === String(voucherId))
+      if (!voucher) return '未知商品'
+      return `商品：${voucher.title}`
     },
     /** 根据店铺ID获取店铺名称 */
     getShopName(shopId) {
-      const shop = this.shopList.find(item => item.id === shopId)
+      const shop = this.shopList.find(item => String(item.id) === String(shopId))
       return shop ? shop.name : '未知店铺'
     },
     /** 根据店铺ID获取店铺详细信息 */
     getShopInfo(shopId) {
-      const shop = this.shopList.find(item => item.id === shopId)
+      const shop = this.shopList.find(item => String(item.id) === String(shopId))
       if (!shop) return '未知店铺'
-      return `店铺: ${shop.name}, 地址: ${shop.address || '暂无地址'}, 电话: ${shop.phone || '暂无电话'}`
+      return `店铺：${shop.name}`
     },
     /** 获取支付方式文本 */
     getPayTypeText(payType) {
@@ -597,7 +716,7 @@ export default {
         shopId: null,
         payType: 1,
         status: 1,
-        amount: null,
+        payAmount: null,
         createTime: null,
         payTime: null,
         useTime: null,
@@ -633,14 +752,39 @@ export default {
       this.reset()
       const id = row.id || this.ids
       getOrder(id).then(response => {
-        this.form = response.data
+        this.form = this.normalizeOrderItem(response.data)
+        const currentRow = row || this.orderList.find(item => String(item.id) === String(id)) || {}
+        this.userList = this.mergeOption(this.userList, {
+          id: this.form.userId,
+          nickName: response.data.userName || currentRow.userName || `用户${this.form.userId}`
+        })
+        this.voucherList = this.mergeOption(this.voucherList, {
+          id: this.form.voucherId,
+          title: response.data.productName || currentRow.productName || `商品${this.form.voucherId}`
+        })
+        this.shopList = this.mergeOption(this.shopList, {
+          id: this.form.shopId,
+          name: response.data.shopName || currentRow.shopName || `店铺${this.form.shopId}`
+        })
         this.open = true
         this.title = "修改订单"
       })
     },
     /** 查看详情操作 */
     handleDetail(row) {
-      this.currentOrder = row
+      this.userList = this.mergeOption(this.userList, {
+        id: row.userId,
+        nickName: row.userName || `用户${row.userId}`
+      })
+      this.voucherList = this.mergeOption(this.voucherList, {
+        id: row.voucherId,
+        title: row.productName || `商品${row.voucherId}`
+      })
+      this.shopList = this.mergeOption(this.shopList, {
+        id: row.shopId,
+        name: row.shopName || `店铺${row.shopId}`
+      })
+      this.currentOrder = this.normalizeOrderItem(row)
       this.detailOpen = true
     },
     /** 提交按钮 */
@@ -858,3 +1002,4 @@ export default {
     }
 }
 </style>
+

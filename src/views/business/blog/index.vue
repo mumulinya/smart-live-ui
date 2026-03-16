@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="app-container">
     <el-card class="box-card mb-4" shadow="never">
         <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px" class="search-form">
@@ -155,10 +155,10 @@
                 <div class="source-info">
                    <div class="shop-line">
                        <el-tag size="mini" effect="plain" type="info" class="type-tag">{{ getShopTypeName(scope.row.typeId) }}</el-tag>
-                       <span class="shop-name"><i class="el-icon-shop"></i> {{ getShopName(scope.row.shopId) }}</span>
+                       <span class="shop-name"><i class="el-icon-shop"></i> {{ scope.row.shopName || getShopName(scope.row.shopId) }}</span>
                    </div>
                    <div class="user-line">
-                       <i class="el-icon-user"></i> {{ getUserName(scope.row.userId) }}
+                       <i class="el-icon-user"></i> {{ scope.row.userName || scope.row.username || getUserName(scope.row.userId) }}
                    </div>
                 </div>
             </template>
@@ -331,10 +331,10 @@
              <div class="detail-meta-bar">
                  <div class="meta-left">
                      <span class="meta-tag shop-type">{{ getShopTypeName(detailForm.typeId) }}</span>
-                     <span class="meta-text shop"><i class="el-icon-shop"></i> {{ getShopName(detailForm.shopId) }}</span>
+                     <span class="meta-text shop"><i class="el-icon-shop"></i> {{ detailForm.shopName || getShopName(detailForm.shopId) }}</span>
                  </div>
                  <div class="meta-right">
-                      <span class="meta-text user"><i class="el-icon-user"></i> {{ getUserName(detailForm.userId) }}</span>
+                      <span class="meta-text user"><i class="el-icon-user"></i> {{ detailForm.userName || detailForm.username || getUserName(detailForm.userId) }}</span>
                       <span class="meta-text time">{{ parseTime(detailForm.createTime) }}</span>
                  </div>
              </div>
@@ -488,8 +488,6 @@ export default {
   },
   created() {
     this.getList()
-    this.getUserList()
-    this.getShopList()
     this.getShopTypeList()
   },
   methods: {
@@ -525,21 +523,44 @@ export default {
     getList() {
       this.loading = true
       listBlog(this.queryParams).then(response => {
-        this.blogList = response.rows
+        const rows = response.rows || []
+        rows.forEach(item => {
+          if (item.userId) {
+            const existsUser = this.userList.some(user => String(user.id) === String(item.userId))
+            if (!existsUser) {
+              this.userList.unshift({
+                id: item.userId,
+                nickName: item.userName || item.username || `用户${item.userId}`
+              })
+            }
+          }
+          if (item.shopId) {
+            const existsShop = this.shopList.some(shop => String(shop.id) === String(item.shopId))
+            if (!existsShop) {
+              this.shopList.unshift({
+                id: item.shopId,
+                name: item.shopName || `店铺${item.shopId}`,
+                typeId: item.typeId
+              })
+            }
+          }
+        })
+        this.filteredShopList = [...this.shopList]
+        this.blogList = rows
         this.total = response.total
         this.loading = false
       })
     },
     /** 查询用户列表 */
     getUserList() {
-      userList().then(response => {
+      return userList().then(response => {
         this.userList = response.data || []
         this.userSearchOptions = this.userList.slice(0, 20)
       })
     },
     /** 查询店铺列表 */
     getShopList() {
-      shopList().then(response => {
+      return shopList().then(response => {
         this.shopList = response.data || []
         this.shopSearchOptions = this.shopList.slice(0, 20)
         this.filteredShopList = [...this.shopList]
@@ -689,39 +710,50 @@ export default {
     /** 新增按钮操作 */
     handleAdd() {
       this.reset()
-      this.open = true
-      this.title = "添加博客"
+      Promise.all([
+        this.userList.length ? Promise.resolve() : this.getUserList(),
+        this.shopList.length ? Promise.resolve() : this.getShopList()
+      ]).finally(() => {
+        this.open = true
+        this.title = "添加博客"
+      })
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
       this.reset()
       const id = row.id || this.ids
-      getBlog(id).then(response => {
-        this.form = response.data
-        // 根据店铺ID设置类型ID
-        if (this.form.shopId) {
-          const shop = this.shopList.find(item => item.id == this.form.shopId)
-          if (shop) {
-            this.form.typeId = shop.typeId
-            this.handleTypeChange(shop.typeId)
+      Promise.all([
+        this.userList.length ? Promise.resolve() : this.getUserList(),
+        this.shopList.length ? Promise.resolve() : this.getShopList()
+      ]).finally(() => {
+        getBlog(id).then(response => {
+          this.form = response.data
+          if (this.form.shopId) {
+            const shop = this.shopList.find(item => item.id == this.form.shopId)
+            if (shop) {
+              this.form.typeId = shop.typeId
+              this.handleTypeChange(shop.typeId)
+            }
           }
-        }
-        // 将图片字符串转换为文件列表格式
-        if (this.form.images) {
-          const imageUrls = this.form.images.split(',').filter(img => img.trim())
-          this.fileList = imageUrls.map((url, index) => ({
-            name: `image_${index + 1}`,
-            url: url
-          }))
-        }
-        this.open = true
-        this.title = "修改博客"
+          if (this.form.images) {
+            const imageUrls = this.form.images.split(',').filter(img => img.trim())
+            this.fileList = imageUrls.map((url, index) => ({
+              name: image_,
+              url: url
+            }))
+          }
+          this.open = true
+          this.title = "修改博客"
+        })
       })
     },
     /** 查看详情按钮操作 */
     handleDetail(row) {
       getBlog(row.id).then(response => {
-        this.detailForm = response.data
+        this.detailForm = {
+          ...row,
+          ...response.data
+        }
         this.detailForm.imageList = this.detailForm.images ?
           this.detailForm.images.split(',').map(img => img.trim()).filter(img => img) : []
         this.detailOpen = true
@@ -977,3 +1009,5 @@ export default {
     }
 }
 </style>
+
+
