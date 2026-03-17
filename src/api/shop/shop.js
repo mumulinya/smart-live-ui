@@ -63,18 +63,21 @@ export function shopTypeList() {
     method: 'get',
   })
 }
-export function getShopAnalysis(shopId, timeRange = 'week') {
+export function getShopAnalysis(shopId, query = 'week') {
+  const params = typeof query === 'string'
+    ? { timeRange: query }
+    : (query || {})
   return request({
     url: '/shop/analysis/' + shopId,
     method: 'get',
-    params: { timeRange }
+    params: params
   })
 }
-export function getShopSuggest(shopId, timeRange = 'week') {
+export function getShopSuggest(shopId) {
   return request({
     url: '/shop/suggest/' + shopId,
     method: 'get',
-    params: { timeRange }
+    timeout: 60000
   })
 }
 export function allPublish(){

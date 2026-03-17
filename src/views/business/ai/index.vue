@@ -35,7 +35,6 @@
             </button>
           </div>
         </div>
-
         <div class="topbar-right">
           <div class="session-menu" ref="sessionMenu">
             <button
@@ -77,7 +76,6 @@
               </div>
             </div>
           </div>
-
           <button
             class="new-session-btn"
             type="button"
@@ -88,9 +86,12 @@
           </button>
         </div>
       </header>
-
       <div class="assistant-body">
-        <aside :class="['assistant-left', activeType + '-panel']" v-loading="isPanelLoading">
+        <aside
+          :class="['assistant-left', activeType + '-panel']"
+          v-loading="isPanelLoading"
+          :element-loading-text="panelLoadingText"
+        >
           <template v-if="activeType === 'reply'">
             <div class="panel-header">
               <div class="panel-title">待回复评价</div>
@@ -103,7 +104,7 @@
                 prefix-icon="el-icon-search"
                 size="mini"
                 clearable
-                placeholder="搜索评价内容或用户名..."
+                placeholder="搜索评价内容..."
               />
             </div>
             <div class="panel-filter-chips">
@@ -192,7 +193,6 @@
               @pagination="handleReplyPageChange"
             />
           </template>
-
           <template v-else-if="activeType === 'analysis'">
             <div class="panel-header">
               <div class="panel-title">经营状况分析</div>
@@ -212,20 +212,42 @@
             </div>
             <div class="panel-scroll-section">
               <div class="data-card-list placeholder-gap">
-                <div v-for="card in analysisCards" :key="card.label" class="data-card">
-                  <div class="data-label">{{ card.label }}</div>
-                  <div class="data-value">{{ card.value }}</div>
-                  <div class="data-sub">{{ card.sub }}</div>
+                <div
+                  v-for="card in analysisCards"
+                  :key="card.label"
+                  class="data-card"
+                  :class="isProductRankCard(card) ? 'product-rank-card rank-' + card.rankType : ''"
+                >
+                  <template v-if="isProductRankCard(card)">
+                    <div class="data-label">{{ card.label }}</div>
+                    <div v-if="card.items && card.items.length" class="product-rank-list">
+                      <div
+                        v-for="(item, index) in card.items"
+                        :key="card.label + '_' + index"
+                        class="product-rank-item"
+                      >
+                        <span class="product-rank-badge">{{ getProductRankBadge(card, index) }}</span>
+                        <span class="product-rank-name" :title="item.name">{{ item.name }}</span>
+                        <span class="product-rank-sales">{{ item.salesText }}</span>
+                      </div>
+                    </div>
+                    <div v-else class="product-rank-empty">暂无商品数据</div>
+                    <div class="data-sub">{{ card.sub }}</div>
+                  </template>
+                  <template v-else>
+                    <div class="data-label">{{ card.label }}</div>
+                    <div class="data-value">{{ card.value }}</div>
+                    <div class="data-sub">{{ card.sub }}</div>
+                  </template>
                 </div>
               </div>
-              <div class="panel-note">注：以上数据仅供参考，AI 分析结果基于现有经营模型，请结合实际情况。</div>
+              <div class="panel-note">注：以上数据仅供参考，AI 分析结果基于现有经营模型，请结合实际经营情况判断。</div>
             </div>
           </template>
-
           <template v-else-if="activeType === 'copywrite'">
             <div class="panel-header">
               <div class="panel-title">商品营销文案</div>
-              <div class="panel-subtitle">为您的商品生成吸引人的营销文案。</div>
+              <div class="panel-subtitle">为您的商品生成吸引人的营销推广文案。</div>
             </div>
             <div class="panel-filter-row">
               <el-input
@@ -234,12 +256,12 @@
                 prefix-icon="el-icon-search"
                 size="mini"
                 clearable
-                placeholder="搜索商品名称或标题..."
+                placeholder="搜索商品名称..."
               />
             </div>
             <div class="panel-summary-row">
               <span>共 {{ productTotal }} 个商品</span>
-              <span>已选 {{ selectedProduct ? 1 : 0 }} 个</span>
+              <span>已选择 {{ selectedProduct ? 1 : 0 }} 个</span>
             </div>
             <div v-if="!hasSelectedShop" class="panel-empty">请选择店铺以查看商品</div>
             <div v-else-if="!filteredProducts.length" class="panel-empty">当前页暂无商品信息</div>
@@ -284,37 +306,58 @@
               @pagination="handleProductPageChange"
             />
           </template>
-
           <template v-else>
             <div class="panel-header">
               <div class="panel-title">经营改进建议</div>
               <div class="panel-subtitle">基于经营数据，提供多维度的增长方案。</div>
             </div>
-            <div class="panel-filter-chips">
-              <button
-                v-for="item in analysisRanges"
-                :key="item.value"
-                class="filter-chip"
-                :class="{ active: analysisRange === item.value }"
-                type="button"
-                @click="handleAnalysisRangeChange(item.value)"
-              >
-                {{ item.label }}
-              </button>
-            </div>
             <div class="panel-scroll-section">
               <div class="data-card-list">
-                <div v-for="card in suggestCards" :key="card.label" class="data-card">
+                <div
+                  v-for="card in suggestCards"
+                  :key="card.label"
+                  class="data-card"
+                >
                   <div class="data-label">{{ card.label }}</div>
-                  <div class="data-value small">{{ card.value }}</div>
+                  <div class="data-value">{{ card.value }}</div>
                   <div class="data-sub">{{ card.sub }}</div>
                 </div>
+              </div>
+              <div class="suggest-section">
+                <div class="suggest-section-title">滞销商品</div>
+                <div v-if="suggestData.slowProducts && suggestData.slowProducts.length" class="suggest-product-list">
+                  <div
+                    v-for="(item, index) in suggestData.slowProducts"
+                    :key="item.id || item.name || index"
+                    class="suggest-product-item"
+                  >
+                    <span class="suggest-product-dot">·</span>
+                    <span class="suggest-product-name" :title="item.name">{{ item.name }}</span>
+                    <span class="suggest-product-sales">{{ item.salesText }}</span>
+                  </div>
+                </div>
+                <div v-else class="product-rank-empty suggest-empty">暂无滞销商品数据</div>
+              </div>
+              <div class="suggest-section">
+                <div class="suggest-section-title">差评关键词</div>
+                <div v-if="suggestData.badReviewKeywords && suggestData.badReviewKeywords.length" class="suggest-keyword-list">
+                  <el-tag
+                    v-for="keyword in suggestData.badReviewKeywords"
+                    :key="keyword"
+                    type="danger"
+                    effect="plain"
+                    class="suggest-keyword-tag"
+                    @click="fillInput(keyword)"
+                  >
+                    {{ keyword }}
+                  </el-tag>
+                </div>
+                <div v-else class="product-rank-empty suggest-empty">暂无差评关键词</div>
               </div>
               <div class="panel-note">注：AI 辅助决策建议基于大数据分析，不构成法律声明及商业保证。</div>
             </div>
           </template>
         </aside>
-
         <section class="assistant-chat">
           <div class="chat-header">
             <div>
@@ -323,14 +366,12 @@
             </div>
             <div v-if="currentSession" class="chat-session-tag">{{ currentSession.title }}</div>
           </div>
-
           <div ref="messageListRef" class="chat-message-list" v-loading="isMessageLoading">
             <div v-if="!hasSelectedShop" class="chat-empty-state">
               <div class="state-mark">AI</div>
               <div class="state-title">请选择店铺以开始</div>
-              <div class="state-text">欢迎使用 AI 智能客服。请从左侧选择一个店铺或具体功能开始。</div>
+              <div class="state-text">欢迎使用 AI 智能助手。请从左侧选择一个店铺或具体功能开始。</div>
             </div>
-
             <template v-else-if="!currentSession || !currentSession.messages.length">
               <div class="chat-welcome-card" v-if="activeType === 'copywrite' && selectedProduct">
                 <article class="context-preview product">
@@ -362,7 +403,6 @@
                   </div>
                 </article>
               </div>
-
               <div class="message-row ai">
                 <div class="message-avatar">AI</div>
                 <div class="message-bubble ai">
@@ -371,7 +411,6 @@
                 </div>
               </div>
             </template>
-
             <template v-else>
               <div
                 v-for="(message, index) in currentSession.messages"
@@ -394,11 +433,11 @@
                           <div v-else class="product-cover-fallback">{{ getProductAvatar(message.contextQuote.name) }}</div>
                         </div>
                         <div class="product-main">
-                          <div class="product-name">{{ message.contextQuote.name || "未命名商品" }}</div>
+                            <div class="product-name">{{ message.contextQuote.name || "未命名商品" }}</div>
                           <div class="product-subtitle">{{ message.contextQuote.subTitle || "暂无商品描述" }}</div>
                           <div class="product-meta">
                             <span class="product-price">{{ formatCurrency(message.contextQuote.price) }}</span>
-                            <span class="product-sold">累计销量 {{ message.contextQuote.sold || 0 }}</span>
+                              <span class="product-sold">累计销量 {{ message.contextQuote.sold || 0 }}</span>
                           </div>
                         </div>
                       </div>
@@ -425,7 +464,7 @@
                                 :key="'quote_star_' + starIndex"
                                 class="rating-star small"
                                 :class="{ active: starIndex <= getScoreValue(message.contextQuote.score) }"
-                              >★</span>
+                                >★</span>
                             </span>
                           </template>
                           <span v-if="message.contextQuote.meta" class="message-quote-time">{{ message.contextQuote.meta }}</span>
@@ -470,14 +509,13 @@
                 </template>
               </div>
             </template>
-
             <div
               v-if="activeType === 'reply' && replyActionReview && generatedReplyContent"
               class="reply-action-bar"
             >
               <div>
                 <div class="reply-action-title">AI 生成的回复内容：</div>
-                <div class="reply-action-text">提示：您可以直接点击下方按钮进行快速回复，或在对话框中进行进一步修改。</div>
+                <div class="reply-action-text">提示：您可以直接点击下方按钮进行快捷回复，或在对话框中输入补充要求。</div>
               </div>
               <div class="reply-action-buttons">
                 <el-button size="small" :disabled="isStreaming" @click="handleRegenerateReply">
@@ -489,7 +527,6 @@
               </div>
             </div>
           </div>
-
           <div class="chat-input-area">
             <div v-if="activeType === 'reply' && selectedReview" class="chat-context-card review">
               <div class="chat-context-head">
@@ -523,9 +560,9 @@
                   :key="'input_context_star_' + starIndex"
                   class="rating-star small"
                   :class="{ active: starIndex <= getScoreValue(selectedReview.score) }"
-                >★</span>
+                  >★</span>
               </div>
-              <div class="chat-context-content">{{ selectedReview.plainContent || '评价内容加载中...' }}</div>
+              <div class="chat-context-content">{{ selectedReview.plainContent || "评价内容加载中..." }}</div>
               <div v-if="selectedReview.imageList && selectedReview.imageList.length" class="review-image-list compact">
                 <el-image
                   v-for="(image, imageIndex) in selectedReview.imageList"
@@ -558,7 +595,7 @@
                   <div v-else class="product-cover-fallback">{{ getProductAvatar(selectedProduct.name) }}</div>
                 </div>
                 <div class="product-main">
-                  <div class="product-name">{{ selectedProduct.name || '未命名商品' }}</div>
+                  <div class="product-name">{{ selectedProduct.name || "未命名商品" }}</div>
                   <div class="product-subtitle">{{ selectedProduct.subTitle || '暂无商品描述' }}</div>
                   <div class="product-meta">
                     <span class="product-price">{{ formatCurrency(selectedProduct.price) }}</span>
@@ -590,7 +627,6 @@
     </div>
   </div>
 </template>
-
 <script>
 import {
   createAiChatStream,
@@ -605,7 +641,6 @@ import { getReview, listReview } from '@/api/review/review'
 import { listProduct, getProduct } from '@/api/product'
 import { addComment } from '@/api/comment/comment'
 import { getShopAnalysis, getShopSuggest } from '@/api/shop/shop'
-
 const FEATURE_OPTIONS = [
   {
     type: 'reply',
@@ -640,28 +675,24 @@ const FEATURE_OPTIONS = [
     tone: 'tone-purple'
   }
 ]
-
 const FEATURE_MAP = FEATURE_OPTIONS.reduce(function (result, item) {
   result[item.type] = item
   return result
 }, {})
-
 const ANALYSIS_CARDS = [
   { label: '本周订单', value: '--', sub: '统计周期内已确认的订单数。' },
   { label: '预计营收', value: '--', sub: '当前选定范围内的预计营业收入。' },
   { label: '店铺评分', value: '--', sub: '当前店铺在相应周期内的平均评分。' },
-  { label: '差评数量', value: '--', sub: '当前统计周期内的差评条数。' }
-]
-
-const SUGGEST_CARDS = [
-  { label: '订单数量', value: '--', sub: '用于流量及转化率的改进建议。' },
-  { label: '待处理评价', value: '--', sub: '用于服务质量及售后建议。' },
-  { label: '平均评分', value: '--', sub: '当前店铺在统计周期内的平均评分。' },
   { label: '差评数量', value: '--', sub: '当前统计周期内的差评条数。' },
   { label: '热销商品', value: '--', sub: '当前周期内销量最高的商品。' },
   { label: '滞销商品', value: '--', sub: '近期销量较低，可能需要优化的商品。' }
 ]
-
+const SUGGEST_CARDS = [
+  { label: '待处理评价', value: '--', sub: '待优先处理的评价数量。' },
+  { label: '差评数量', value: '--', sub: '当前识别出的差评总数。' },
+  { label: '复购率', value: '--', sub: '用于衡量老客留存和复购表现。' },
+  { label: '滞销商品数', value: '--', sub: '近期销量偏低，建议重点优化的商品数。' }
+]
 export default {
   name: 'BusinessAiAssistant',
   data() {
@@ -673,6 +704,13 @@ export default {
       suggestCards: SUGGEST_CARDS.map(function (item) {
         return Object.assign({}, item)
       }),
+      suggestData: {
+        pendingReviewCount: 0,
+        badReviewCount: 0,
+        repurchaseRate: '',
+        slowProducts: [],
+        badReviewKeywords: []
+      },
       replyFilters: [
         { label: '全部评价', value: 'all' },
         { label: '待回复', value: 'pending' },
@@ -694,6 +732,7 @@ export default {
       replyFilter: 'all',
       copywriteQuery: '',
       analysisRange: 'week',
+      analysisRecordId: null,
       replyReviews: [],
       products: [],
       replyPageNum: 1,
@@ -728,7 +767,9 @@ export default {
       viewportWidth: typeof window !== 'undefined' ? window.innerWidth : 0,
       sessionLoadToken: 0,
       panelLoadToken: 0,
-      messageLoadToken: 0
+      messageLoadToken: 0,
+      replySearchTimer: null,
+      productSearchTimer: null
     }
   },
   computed: {
@@ -781,8 +822,8 @@ export default {
         }
       }
       return null
-    },    filteredReplyReviews() {
-      const keyword = String(this.replyQuery || '').trim().toLowerCase()
+    },
+    filteredReplyReviews() {
       return this.replyReviews.filter((item) => {
         if (this.replyFilter === 'pending' && item.isReplied) {
           return false
@@ -790,24 +831,11 @@ export default {
         if (this.replyFilter === 'lowScore' && Number(item.score || 0) > 3) {
           return false
         }
-        if (!keyword) {
-          return true
-        }
-        const source = [item.plainContent, this.getReviewDisplayName(item), item.sourceName]
-          .join(' ')
-          .toLowerCase()
-        return source.indexOf(keyword) !== -1
+        return true
       })
     },
     filteredProducts() {
-      const keyword = String(this.copywriteQuery || '').trim().toLowerCase()
-      if (!keyword) {
-        return this.products
-      }
-      return this.products.filter(function (item) {
-        const source = [item.name, item.subTitle].join(' ').toLowerCase()
-        return source.indexOf(keyword) !== -1
-      })
+      return this.products
     },
     pendingReplyCount() {
       return this.replyReviews.filter(function (item) {
@@ -877,9 +905,24 @@ export default {
         return this.analysisCards.length
       }
       if (this.activeType === 'suggest') {
-        return this.suggestCards.length
+        return this.suggestCards.length + this.suggestData.slowProducts.length + Math.ceil(this.suggestData.badReviewKeywords.length / 2)
       }
       return 0
+    },
+    panelLoadingText() {
+      if (this.activeType === 'reply') {
+        return '正在加载评价，请稍候...'
+      }
+      if (this.activeType === 'copywrite') {
+        return '正在加载商品，请稍候...'
+      }
+      if (this.activeType === 'analysis') {
+        return '正在加载经营数据，请稍候...'
+      }
+      if (this.activeType === 'suggest') {
+        return '正在统计数据，请稍候...'
+      }
+      return '正在加载数据，请稍候...'
     },
     assistantShellStyle() {
       const width = Number(this.viewportWidth || 0)
@@ -908,6 +951,12 @@ export default {
       if (this.activeType === 'copywrite') {
         return !!this.selectedProduct
       }
+      if (this.activeType === 'analysis') {
+        return !this.isPanelLoading && !!this.analysisRecordId
+      }
+      if (this.activeType === 'suggest') {
+        return !this.isPanelLoading
+      }
       return !!String(this.inputMessage || '').trim()
     },
     inputPlaceholder() {
@@ -930,15 +979,27 @@ export default {
         return '请先在左侧选择一条评价，选中后再点击发送。'
       }
       if (this.activeType === 'reply' && this.selectedReview) {
-        return '已选评价。可补充要求后发送，也可不填内容直接发送默认回复请求。'
+        return '已选中评价。可补充要求后发送，也可不填内容直接发送默认回复请求。'
       }
       if (this.activeType === 'copywrite') {
         return this.selectedProduct
-          ? '已选商品。可补充要求后发送，也可不填内容直接发送默认文案请求。'
+          ? '已选中商品。可补充要求后发送，也可不填内容直接发送默认文案请求。'
           : '请先在左侧选定商品，选中后再点击发送。'
       }
-      if (this.activeType === 'analysis' || this.activeType === 'suggest') {
-        return '按回车发送。当前分析周期为 ' + this.currentAnalysisRangeLabel + '。'
+      if (this.activeType === 'analysis') {
+        if (this.isPanelLoading) {
+          return '正在加载经营数据，请稍后发送。'
+        }
+        if (!this.analysisRecordId) {
+          return '请先等待经营分析数据加载完成，再开始分析。'
+        }
+        return '可直接发送开始分析，也可输入具体问题后发送。当前分析周期为 ' + this.currentAnalysisRangeLabel + '。'
+      }
+      if (this.activeType === 'suggest') {
+        if (this.isPanelLoading) {
+          return '正在加载经营改进数据，请稍后发送。'
+        }
+        return '可直接发送开始分析，也可输入具体问题后发送。'
       }
       return '按回车发送。使用 Shift + Enter 换行。'
     },
@@ -958,8 +1019,13 @@ export default {
       if (this.activeType === 'copywrite' && this.selectedProduct) {
         return '当前已绑定商品：' + (this.selectedProduct.name || '未命名商品')
       }
-      if (this.activeType === 'analysis' || this.activeType === 'suggest') {
+      if (this.activeType === 'analysis') {
         return '当前分析周期：' + this.currentAnalysisRangeLabel
+      }
+      if (this.activeType === 'suggest') {
+        return this.isPanelLoading
+          ? '经营改进数据加载中...'
+          : '当前已加载经营改进数据，可直接发起 AI 分析。'
       }
       return ''
     },
@@ -988,7 +1054,20 @@ export default {
       return ''
     }
   },
+  watch: {
+    replyQuery() {
+      this.scheduleReplyPanelReload()
+    },
+    copywriteQuery() {
+      this.scheduleProductPanelReload()
+    },
+    replyFilter() {
+      this.scheduleReplyPanelReload(true)
+    }
+  },
   created() {
+    this.analysisCards = this.createDefaultAnalysisCards()
+    this.suggestCards = this.createDefaultSuggestCards()
     this.loadShopOptions()
   },
   mounted() {
@@ -999,6 +1078,7 @@ export default {
   beforeDestroy() {
     window.removeEventListener('resize', this.handleWindowResize)
     document.removeEventListener('click', this.handleDocumentClick)
+    this.clearAllPanelSearchTimers()
     if (this.activeStreamController) {
       this.activeStreamController.abort()
     }
@@ -1011,6 +1091,157 @@ export default {
       }
       this.viewportHeight = window.innerHeight
       this.viewportWidth = window.innerWidth
+    },
+    clearPanelSearchTimer(type) {
+      const timerKey = type === 'reply' ? 'replySearchTimer' : 'productSearchTimer'
+      if (this[timerKey]) {
+        clearTimeout(this[timerKey])
+        this[timerKey] = null
+      }
+    },
+    clearAllPanelSearchTimers() {
+      this.clearPanelSearchTimer('reply')
+      this.clearPanelSearchTimer('product')
+    },
+    scheduleReplyPanelReload(immediate) {
+      this.schedulePanelReload('reply', immediate)
+    },
+    scheduleProductPanelReload(immediate) {
+      this.schedulePanelReload('product', immediate)
+    },
+    schedulePanelReload(type, immediate) {
+      const timerType = type === 'reply' ? 'reply' : 'product'
+      this.clearPanelSearchTimer(timerType)
+      if (!this.hasSelectedShop) {
+        return
+      }
+      if (timerType === 'reply' && this.activeType !== 'reply') {
+        return
+      }
+      if (timerType === 'product' && this.activeType !== 'copywrite') {
+        return
+      }
+      const reload = () => {
+        if (timerType === 'reply') {
+          this.reloadReplyPanelData(true)
+          return
+        }
+        this.reloadProductPanelData(true)
+      }
+      if (immediate) {
+        reload()
+        return
+      }
+      const timerKey = timerType === 'reply' ? 'replySearchTimer' : 'productSearchTimer'
+      this[timerKey] = setTimeout(() => {
+        this[timerKey] = null
+        reload()
+      }, 300)
+    },
+    async reloadReplyPanelData(resetPage) {
+      this.clearPanelSearchTimer('reply')
+      if (!this.hasSelectedShop) {
+        return
+      }
+      if (resetPage !== false) {
+        this.replyPageNum = 1
+      }
+      this.selectedReviewId = null
+      try {
+        const loadToken = ++this.panelLoadToken
+        await this.loadReplyPanelData(this.selectedShopId, loadToken)
+      } catch (error) {
+      }
+    },
+    async reloadProductPanelData(resetPage) {
+      this.clearPanelSearchTimer('product')
+      if (!this.hasSelectedShop) {
+        return
+      }
+      if (resetPage !== false) {
+        this.productPageNum = 1
+      }
+      this.selectedProductId = null
+      try {
+        const loadToken = ++this.panelLoadToken
+        await this.loadCopywritePanelData(this.selectedShopId, loadToken)
+      } catch (error) {
+      }
+    },
+    buildReplyPanelQuery(shopId) {
+      return this.compactQueryParams({
+        shopId: shopId,
+        pageNum: this.replyPageNum,
+        pageSize: this.replyPageSize,
+        content: this.normalizeKeyword(this.replyQuery),
+        score: this.replyFilter === 'lowScore' ? 3 : undefined
+      })
+    },
+    buildProductPanelQuery(shopId) {
+      return this.compactQueryParams({
+        shopId: shopId,
+        pageNum: this.productPageNum,
+        pageSize: this.productPageSize,
+        name: this.normalizeKeyword(this.copywriteQuery)
+      })
+    },
+    buildAnalysisPanelQuery(shopId, timeRange) {
+      const resolvedTimeRange = String(timeRange || this.analysisRange || 'week').trim() || 'week'
+      const range = this.resolveAnalysisDateRange(resolvedTimeRange)
+      return this.compactQueryParams({
+        timeRange: resolvedTimeRange,
+        startTime: range.startTime,
+        endTime: range.endTime
+      })
+    },
+    resolveAnalysisDateRange(timeRange) {
+      const now = new Date()
+      const start = new Date(now.getTime())
+      if (timeRange === 'month') {
+        start.setDate(1)
+      } else if (timeRange === 'quarter') {
+        const currentMonth = start.getMonth()
+        const quarterStartMonth = Math.floor(currentMonth / 3) * 3
+        start.setMonth(quarterStartMonth, 1)
+      } else {
+        const day = start.getDay() || 7
+        start.setDate(start.getDate() - day + 1)
+      }
+      start.setHours(0, 0, 0, 0)
+      return {
+        startTime: this.formatDateTime(start),
+        endTime: this.formatDateTime(now)
+      }
+    },
+    formatDateTime(value) {
+      const date = Object.prototype.toString.call(value) === '[object Date]' ? new Date(value.getTime()) : new Date(value)
+      if (isNaN(date.getTime())) {
+        return ''
+      }
+      const pad = function (number) {
+        return String(number).padStart(2, '0')
+      }
+      return date.getFullYear() + '-' +
+        pad(date.getMonth() + 1) + '-' +
+        pad(date.getDate()) + ' ' +
+        pad(date.getHours()) + ':' +
+        pad(date.getMinutes()) + ':' +
+        pad(date.getSeconds())
+    },
+    normalizeKeyword(value) {
+      const keyword = String(value || '').trim()
+      return keyword || undefined
+    },
+    compactQueryParams(query) {
+      const result = {}
+      Object.keys(query || {}).forEach((key) => {
+        const value = query[key]
+        if (value === null || value === undefined || value === '') {
+          return
+        }
+        result[key] = value
+      })
+      return result
     },
     async loadShopOptions() {
       this.isShopLoading = true
@@ -1088,7 +1319,6 @@ export default {
       const loadedCount = (safePageNum - 1) * safePageSize + safeCurrentCount
       const previousPagesCapacity = (safePageNum - 1) * safePageSize
       const rawTotal = this.readResponseTotal(response)
-
       if (rawTotal > 0) {
         const invalidForCurrentPage = rawTotal < loadedCount
         const firstPageEchoSize =
@@ -1100,7 +1330,6 @@ export default {
           !invalidForCurrentPage &&
           !firstPageEchoSize &&
           !cannotCoverPreviousPages
-
         if (totalLooksReliable) {
           return {
             total: rawTotal,
@@ -1108,7 +1337,6 @@ export default {
           }
         }
       }
-
       if (safeCurrentCount >= safePageSize) {
         return {
           total: loadedCount + 1,
@@ -1162,6 +1390,7 @@ export default {
           reviewId: item.reviewId || item.review_id || null,
           productId: item.productId || item.product_id || null,
           timeRange: item.timeRange || item.time_range || '',
+          analysisRecordId: item.analysisRecordId || item.analysis_record_id || item.recordId || null,
           contextQuote: this.normalizeMessageContextQuote(item, sessionType)
         }
       })
@@ -1174,7 +1403,6 @@ export default {
       const reviewId = item.reviewId || item.review_id
       const productId = item.productId || item.product_id
       const timeRange = item.timeRange || item.time_range || ''
-
       if (type === 'reply' && reviewId && (item.reviewContent || item.reviewPlainContent)) {
         return {
           kind: 'review',
@@ -1188,7 +1416,6 @@ export default {
           userIcon: this.buildFileUrl(item.reviewUserIcon || item.userIcon || item.user_icon)
         }
       }
-
       if (type === 'copywrite' && productId && (item.productName || item.product_name || item.productSubTitle || item.product_sub_title)) {
         return {
           kind: 'product',
@@ -1203,7 +1430,6 @@ export default {
           coverImg: this.buildFileUrl(item.productCoverImg || item.product_cover_img || item.coverImg || item.cover_img)
         }
       }
-
       if ((type === 'analysis' || type === 'suggest') && timeRange) {
         return {
           kind: 'range',
@@ -1249,7 +1475,6 @@ export default {
         date.getFullYear() === now.getFullYear() &&
         date.getMonth() === now.getMonth() &&
         date.getDate() === now.getDate()
-
       if (isSameDay) {
         return [date.getHours(), date.getMinutes()]
           .map(function (value) {
@@ -1417,14 +1642,112 @@ export default {
         .trim()
     },
     createDefaultAnalysisCards() {
-      return ANALYSIS_CARDS.map(function (item) {
-        return Object.assign({}, item)
+      return ANALYSIS_CARDS.map((item, index) => {
+        const card = Object.assign({}, item)
+        if (index === 4) {
+          return this.buildProductRankCard(card, [], { rankType: 'hot' })
+        }
+        if (index === 5) {
+          return this.buildProductRankCard(card, [], { rankType: 'slow' })
+        }
+        return card
       })
     },
     createDefaultSuggestCards() {
       return SUGGEST_CARDS.map(function (item) {
         return Object.assign({}, item)
       })
+    },
+    createDefaultSuggestData() {
+      return {
+        pendingReviewCount: 0,
+        badReviewCount: 0,
+        repurchaseRate: '',
+        slowProducts: [],
+        badReviewKeywords: []
+      }
+    },
+    normalizeSuggestKeywords(value) {
+      if (Array.isArray(value)) {
+        return value
+          .map((item) => String(item || '').trim())
+          .filter(Boolean)
+          .slice(0, 10)
+      }
+      if (typeof value === 'string') {
+        const text = value.trim()
+        if (!text) {
+          return []
+        }
+        const firstChar = text.charAt(0)
+        const lastChar = text.charAt(text.length - 1)
+        if ((firstChar === '[' && lastChar === ']') || (firstChar === '{' && lastChar === '}')) {
+          try {
+            return this.normalizeSuggestKeywords(JSON.parse(text))
+          } catch (error) {
+          }
+        }
+        return text
+          .split(/[、，,\n\r]+/)
+          .map((item) => item.trim())
+          .filter(Boolean)
+          .slice(0, 10)
+      }
+      if (value && typeof value === 'object') {
+        return this.normalizeSuggestKeywords(this.readMetricValue(value, ['items', 'list', 'keywords', 'data']))
+      }
+      return []
+    },
+    normalizeSuggestData(data) {
+      const source = data && typeof data === 'object' ? data : {}
+      const pendingReviewRaw = this.readMetricValue(source, ['pendingReviewCount', 'pendingReplyCount', 'unrepliedCount', 'waitReplyCount'])
+      const badReviewRaw = this.readMetricValue(source, ['badReviewCount', 'negativeReviewCount', 'badReviews'])
+      const repurchaseRate = this.readMetricValue(source, ['repurchaseRate', 'repeatPurchaseRate', 'repeatRate'])
+      const pendingReviewCount = Number(pendingReviewRaw || 0)
+      const badReviewCount = Number(badReviewRaw || 0)
+      return {
+        pendingReviewCount: isFinite(pendingReviewCount) ? pendingReviewCount : 0,
+        badReviewCount: isFinite(badReviewCount) ? badReviewCount : 0,
+        repurchaseRate: repurchaseRate === null || repurchaseRate === undefined ? '' : repurchaseRate,
+        slowProducts: this.normalizeProductSalesItems(this.readMetricValue(source, ['slowProducts', 'slowProduct', 'slowMovingProducts', 'slowMovingProduct'])),
+        badReviewKeywords: this.normalizeSuggestKeywords(this.readMetricValue(source, ['badReviewKeywords', 'keywords', 'badKeywords', 'negativeReviewKeywords']))
+      }
+    },
+    formatSuggestRepurchaseRate(value) {
+      if (value === null || value === undefined || value === '') {
+        return '--'
+      }
+      if (typeof value === 'string') {
+        const text = value.trim()
+        if (!text) {
+          return '--'
+        }
+        if (text.indexOf('%') !== -1) {
+          return text
+        }
+        const numeric = Number(text)
+        if (!isFinite(numeric)) {
+          return text
+        }
+        value = numeric
+      }
+      const numeric = Number(value)
+      if (!isFinite(numeric)) {
+        return '--'
+      }
+      const percent = numeric <= 1 ? numeric * 100 : numeric
+      const rounded = percent % 1 === 0 ? String(percent) : percent.toFixed(percent < 10 ? 1 : 2).replace(/0+$/, '').replace(/\.$/, '')
+      return rounded + '%'
+    },
+    buildSuggestRequestData(data) {
+      const normalized = this.normalizeSuggestData(data)
+      return {
+        pendingReviewCount: normalized.pendingReviewCount,
+        badReviewCount: normalized.badReviewCount,
+        repurchaseRate: normalized.repurchaseRate,
+        slowProducts: normalized.slowProducts,
+        badReviewKeywords: normalized.badReviewKeywords
+      }
     },
     resetPanelState(options) {
       const settings = Object.assign(
@@ -1436,8 +1759,10 @@ export default {
       )
       this.replyReviews = []
       this.products = []
+      this.analysisRecordId = null
       this.analysisCards = this.createDefaultAnalysisCards()
       this.suggestCards = this.createDefaultSuggestCards()
+      this.suggestData = this.createDefaultSuggestData()
       this.selectedReviewId = null
       this.selectedProductId = null
       if (!settings.preserveReplyPage) {
@@ -1466,6 +1791,17 @@ export default {
     },
     clearSelectedProduct() {
       this.selectedProductId = null
+    },
+    fillInput(keyword) {
+      const text = String(keyword || '').trim()
+      if (!text) {
+        return
+      }
+      this.inputMessage = '请针对"' + text + '"问题给出具体改进建议'
+      this.$nextTick(() => {
+        this.adjustInputHeight()
+        this.focusMessageInput()
+      })
     },
     resetInputHeight() {
       const input = this.$refs.messageInput
@@ -1586,87 +1922,163 @@ export default {
       return String(value)
     },
     formatProductSalesDisplay(value) {
-      if (!Array.isArray(value) || !value.length) {
+      return this.formatProductSalesItems(this.normalizeProductSalesItems(value))
+    },
+    formatProductSalesItems(items) {
+      if (!Array.isArray(items) || !items.length) {
         return '--'
       }
-      return value
+      return items
         .map((item) => {
-          if (!item || typeof item !== 'object') {
-            return String(item || '').trim()
-          }
-          const name = item.productName || item.name || item.title || ''
-          const salesCount = Number(item.salesCount)
-          if (!name) {
+          if (!item || !item.name) {
             return ''
           }
-          if (isFinite(salesCount) && salesCount >= 0) {
-            return name + ' ' + salesCount + '单'
-          }
-          return name
+          return item.salesText && item.salesText !== '--' ? item.name + ' ' + item.salesText : item.name
         })
         .filter(Boolean)
         .slice(0, 3)
         .join('、') || '--'
     },
+    normalizeProductSalesItems(value) {
+      return this.resolveProductSalesSource(value)
+        .map((item, index) => this.normalizeProductSalesItem(item, index))
+        .filter(Boolean)
+        .slice(0, 3)
+    },
+    resolveProductSalesSource(value) {
+      if (Array.isArray(value)) {
+        return value
+      }
+      if (typeof value === 'string') {
+        const text = value.trim()
+        if (!text) {
+          return []
+        }
+        const firstChar = text.charAt(0)
+        const lastChar = text.charAt(text.length - 1)
+        if ((firstChar === '[' && lastChar === ']') || (firstChar === '{' && lastChar === '}')) {
+          try {
+            return this.resolveProductSalesSource(JSON.parse(text))
+          } catch (error) {
+            return [{ name: text }]
+          }
+        }
+        return [{ name: text }]
+      }
+      if (value && typeof value === 'object') {
+        const nestedList = this.readMetricValue(value, ['items', 'list', 'records', 'rows', 'data'])
+        if (Array.isArray(nestedList)) {
+          return nestedList
+        }
+        return [value]
+      }
+      return []
+    },
+    normalizeProductSalesItem(item, index) {
+      if (item === null || item === undefined) {
+        return null
+      }
+      if (typeof item !== 'object') {
+        const name = String(item || '').trim()
+        if (!name) {
+          return null
+        }
+        return {
+          id: 'product_rank_' + index,
+          name,
+          salesCount: null,
+          salesText: '--'
+        }
+      }
+      const name = String(this.readMetricValue(item, ['productName', 'name', 'title', 'productTitle', 'label']) || '').trim()
+      if (!name) {
+        return null
+      }
+      const salesRaw = this.readMetricValue(item, ['salesCount', 'soldCount', 'sales', 'sold', 'orderCount', 'count', 'quantity', 'totalSold', 'totalSales'])
+      const salesText = typeof salesRaw === 'string' ? salesRaw.replace(/[^\d.-]/g, '') : salesRaw
+      const salesCount = Number(salesText)
+      return {
+        id: item.id || item.productId || item.spuId || item.voucherId || 'product_rank_' + index,
+        name,
+        salesCount: isFinite(salesCount) && salesCount >= 0 ? salesCount : null,
+        salesText: isFinite(salesCount) && salesCount >= 0 ? salesCount + '单' : '--'
+      }
+    },
+    buildProductRankCard(card, value, options) {
+      const settings = Object.assign(
+        {
+          rankType: 'hot'
+        },
+        options
+      )
+      const items = this.normalizeProductSalesItems(value)
+      return Object.assign({}, card, {
+        cardType: 'product-rank',
+        rankType: settings.rankType,
+        items,
+        value: this.formatProductSalesItems(items)
+      })
+    },
+    isProductRankCard(card) {
+      return !!(card && card.cardType === 'product-rank')
+    },
+    getProductRankBadge(card, index) {
+      if (card && card.rankType === 'hot') {
+        return ['🥇', '🥈', '🥉'][index] || '🏅'
+      }
+      return '⚠️'
+    },
     buildAnalysisCards(data) {
       const source = data && typeof data === 'object' ? data : {}
-      return [
-        {
-          label: '订单数量',
-          value: this.formatMetricDisplay(this.readMetricValue(source, ['totalOrders', 'orderCount', 'orders', 'weekOrderCount', 'totalOrderCount']), { type: 'count' }),
-          sub: '统计周期内已确认的订单数。'
-        },
-        {
-          label: '预计营收',
-          value: this.formatMetricDisplay(this.readMetricValue(source, ['totalRevenue', 'estimatedRevenue', 'revenue', 'gmv', 'turnover', 'income']), { type: 'currency' }),
-          sub: '当前选定范围内的预计营业收入。'
-        },
-        {
-          label: '店铺评分',
-          value: this.formatMetricDisplay(this.readMetricValue(source, ['avgScore', 'shopScore', 'rating', 'score']), { type: 'score' }),
-          sub: '当前店铺在相应周期内的平均评分。'
-        },
-        {
-          label: '差评数量',
-          value: this.formatMetricDisplay(this.readMetricValue(source, ['badReviewCount', 'negativeReviewCount', 'badReviews']), { type: 'count' }),
-          sub: '当前统计周期内的差评条数。'
+      return ANALYSIS_CARDS.map((item, index) => {
+        const card = Object.assign({}, item)
+        if (index === 0) {
+          card.value = this.formatMetricDisplay(this.readMetricValue(source, ['totalOrders', 'orderCount', 'orders', 'weekOrderCount', 'totalOrderCount']), { type: 'count' })
+          return card
         }
-      ]
+        if (index === 1) {
+          card.value = this.formatMetricDisplay(this.readMetricValue(source, ['totalRevenue', 'estimatedRevenue', 'revenue', 'gmv', 'turnover', 'income']), { type: 'currency' })
+          return card
+        }
+        if (index === 2) {
+          card.value = this.formatMetricDisplay(this.readMetricValue(source, ['avgScore', 'shopScore', 'rating', 'score']), { type: 'score' })
+          return card
+        }
+        if (index === 3) {
+          card.value = this.formatMetricDisplay(this.readMetricValue(source, ['badReviewCount', 'negativeReviewCount', 'badReviews']), { type: 'count' })
+          return card
+        }
+        if (index === 4) {
+          return this.buildProductRankCard(card, this.readMetricValue(source, ['hotProducts', 'hotProduct', 'topProducts', 'topProduct']), { rankType: 'hot' })
+        }
+        if (index === 5) {
+          return this.buildProductRankCard(card, this.readMetricValue(source, ['slowProducts', 'slowProduct', 'slowMovingProducts', 'slowMovingProduct']), { rankType: 'slow' })
+        }
+        return card
+      })
     },
     buildSuggestCards(data) {
-      const source = data && typeof data === 'object' ? data : {}
-      return [
-        {
-          label: '订单数量',
-          value: this.formatMetricDisplay(this.readMetricValue(source, ['weekOrders', 'orderCount', 'orders', 'weekOrderCount', 'totalOrderCount']), { type: 'count' }),
-          sub: '用于流量及转化率的改进建议。'
-        },
-        {
-          label: '待处理评价',
-          value: this.formatMetricDisplay(this.readMetricValue(source, ['pendingReviewCount', 'pendingReplyCount', 'unrepliedCount', 'waitReplyCount']), { type: 'count' }),
-          sub: '用于服务质量及售后建议。'
-        },
-        {
-          label: '平均评分',
-          value: this.formatMetricDisplay(this.readMetricValue(source, ['avgScore', 'shopScore', 'rating', 'score']), { type: 'score' }),
-          sub: '当前店铺在统计周期内的平均评分。'
-        },
-        {
-          label: '差评数量',
-          value: this.formatMetricDisplay(this.readMetricValue(source, ['badReviewCount', 'negativeReviewCount', 'badReviews']), { type: 'count' }),
-          sub: '当前统计周期内的差评条数。'
-        },
-        {
-          label: '热销商品',
-          value: this.formatProductSalesDisplay(this.readMetricValue(source, ['hotProducts', 'hotProduct', 'topProducts', 'topProduct'])),
-          sub: '当前周期内销量最高的商品。'
-        },
-        {
-          label: '滞销商品',
-          value: this.formatProductSalesDisplay(this.readMetricValue(source, ['slowProducts', 'slowProduct', 'slowMovingProducts', 'slowMovingProduct'])),
-          sub: '近期销量较低，可能需要优化的商品。'
+      const suggestData = this.normalizeSuggestData(data)
+      return SUGGEST_CARDS.map((item, index) => {
+        const card = Object.assign({}, item)
+        if (index === 0) {
+          card.value = this.formatMetricDisplay(suggestData.pendingReviewCount, { type: 'count' })
+          return card
         }
-      ]
+        if (index === 1) {
+          card.value = this.formatMetricDisplay(suggestData.badReviewCount, { type: 'count' })
+          return card
+        }
+        if (index === 2) {
+          card.value = this.formatSuggestRepurchaseRate(suggestData.repurchaseRate)
+          return card
+        }
+        if (index === 3) {
+          card.value = this.formatMetricDisplay(suggestData.slowProducts.length, { type: 'count' })
+          return card
+        }
+        return card
+      })
     },
     async resolveReviewDetail(reviewId) {
       const key = String(reviewId || '')
@@ -1786,16 +2198,10 @@ export default {
     async loadReplyPanelData(shopId, loadToken) {
       this.isPanelLoading = true
       try {
-        const response = await listReview({
-          shopId: shopId,
-          pageNum: this.replyPageNum,
-          pageSize: this.replyPageSize
-        })
-
+        const response = await listReview(this.buildReplyPanelQuery(shopId))
         if (loadToken !== this.panelLoadToken) {
           return
         }
-
         const rows = this.readResponseRows(response).filter((item) => {
           const sourceType = Number(item && item.sourceType)
           return sourceType === 2 || sourceType === 4
@@ -1832,7 +2238,6 @@ export default {
             sourceName: sourceName
           })
         }))
-
         this.replyReviews = reviews.sort((left, right) => {
           return this.normalizeTimestamp(right.createTime) - this.normalizeTimestamp(left.createTime)
         })
@@ -1844,7 +2249,6 @@ export default {
         )
         this.replyTotalExact = replyPaging.exact
         this.replyTotal = replyPaging.total
-
         if (!this.replyReviews.some((item) => String(item.id) === String(this.selectedReviewId))) {
           this.selectedReviewId = null
         }
@@ -1865,11 +2269,7 @@ export default {
     async loadCopywritePanelData(shopId, loadToken) {
       this.isPanelLoading = true
       try {
-        const response = await listProduct({
-          shopId: shopId,
-          pageNum: this.productPageNum,
-          pageSize: this.productPageSize
-        })
+        const response = await listProduct(this.buildProductPanelQuery(shopId))
         if (loadToken !== this.panelLoadToken) {
           return
         }
@@ -1911,15 +2311,18 @@ export default {
     async loadAnalysisPanelData(shopId, loadToken) {
       this.isPanelLoading = true
       try {
-        const response = await getShopAnalysis(shopId, this.analysisRange)
+        const response = await getShopAnalysis(shopId, this.buildAnalysisPanelQuery(shopId, this.analysisRange))
         if (loadToken !== this.panelLoadToken) {
           return
         }
-        this.analysisCards = this.buildAnalysisCards(this.readResponseData(response) || {})
+        const analysisData = this.readResponseData(response) || {}
+        this.analysisRecordId = this.readMetricValue(analysisData, ['id', 'analysisRecordId', 'recordId']) || null
+        this.analysisCards = this.buildAnalysisCards(analysisData)
       } catch (error) {
         if (loadToken !== this.panelLoadToken) {
           return
         }
+        this.analysisRecordId = null
         this.analysisCards = this.createDefaultAnalysisCards()
       } finally {
         if (loadToken === this.panelLoadToken) {
@@ -1930,15 +2333,18 @@ export default {
     async loadSuggestPanelData(shopId, loadToken) {
       this.isPanelLoading = true
       try {
-        const response = await getShopSuggest(shopId, this.analysisRange)
+        const response = await getShopSuggest(shopId)
         if (loadToken !== this.panelLoadToken) {
           return
         }
-        this.suggestCards = this.buildSuggestCards(this.readResponseData(response) || {})
+        const suggestData = this.normalizeSuggestData(this.readResponseData(response) || {})
+        this.suggestData = suggestData
+        this.suggestCards = this.buildSuggestCards(suggestData)
       } catch (error) {
         if (loadToken !== this.panelLoadToken) {
           return
         }
+        this.suggestData = this.createDefaultSuggestData()
         this.suggestCards = this.createDefaultSuggestCards()
       } finally {
         if (loadToken === this.panelLoadToken) {
@@ -2152,6 +2558,7 @@ export default {
       this.sessionDropdownVisible = false
       this.currentSessionId = null
       this.replyActionReview = null
+      this.clearAllPanelSearchTimers()
       this.resetTextInputs()
       this.resetPanelState()
       if (value === null || value === undefined || value === '') {
@@ -2181,6 +2588,7 @@ export default {
           this.activeType = type
           this.sessionDropdownVisible = false
           this.replyActionReview = null
+          this.clearAllPanelSearchTimers()
           this.resetTextInputs()
           this.selectedReviewId = null
           this.selectedProductId = null
@@ -2296,7 +2704,7 @@ export default {
     },
     buildReplyAutoMessage(review) {
       const targetName = (review && review.sourceName) || this.selectedShopName || '当前店铺'
-      return '已选择一条评价，请基于该评价为「' + targetName + '」生成默认回复建议。'
+      return '已选择一条评价，请基于该评价为“' + targetName + '”生成默认回复建议。'
     },
     buildReviewQuote(review) {
       if (!review) {
@@ -2344,7 +2752,7 @@ export default {
     normalizeReplyContent(value) {
       let content = String(value || '').trim()
       content = content.replace(/^(回复|AI回复|建议回复)[:：\s]*/i, '')
-      content = content.replace(/^(根据评价内容，我建议如下：|我的回复建议如下：)[:：\s]*/i, '')
+      content = content.replace(/^(?:\u6839\u636e\u8bc4\u4ef7\u5185\u5bb9\uff0c\u6211\u5efa\u8bae\u5982\u4e0b\uff1a|\u6211\u7684\u56de\u590d\u5efa\u8bae\u5982\u4e0b\uff1a)[:\uff1a\\s]*/i, '')
       content = content.replace(/^AI[:：\s]*/i, '')
       content = content.replace(/^[\"\“]/, '')
       content = content.replace(/[\"\”]$/, '')
@@ -2391,12 +2799,12 @@ export default {
       return '营销文案：' + (name.slice(0, 10) || '新营销文案')
     },
     buildCopywriteAutoMessage(product) {
-      return '已选择商品「' + ((product && product.name) || '未命名商品') + '」，请基于商品上下文生成默认营销文案。'
+      return '已选择商品“' + ((product && product.name) || '未命名商品') + '”，请基于商品上下文生成默认营销文案。'
     },
     getProductActivityText(activityType) {
       const map = {
         0: '普通日常销售（无特定大促活动，侧重长期口碑和日常转化率优化）。',
-        1: '限时大促活动（如：百亿补贴、秒杀、限时折。侧重紧迫感和价格优势，引导快速下单）。'
+        1: '限时大促活动（如：百亿补贴、秒杀、限时折扣。侧重紧迫感和价格优势，引导快速下单）。'
       }
       return map[Number(activityType)] || '普通日常销售（无特定大促活动，侧重长期口碑和日常转化率优化）。'
     },
@@ -2424,7 +2832,7 @@ export default {
         return
       }
       const instruction = String(this.inputMessage || '').trim()
-      const allowEmptyInstruction = this.activeType === 'reply' || this.activeType === 'copywrite'
+      const allowEmptyInstruction = this.activeType === 'reply' || this.activeType === 'copywrite' || this.activeType === 'analysis' || this.activeType === 'suggest'
       await this.sendMessage(instruction, {
         type: this.activeType,
         displayMessage: this.buildManualDisplayMessage(this.activeType, instruction),
@@ -2433,10 +2841,9 @@ export default {
         review: this.activeType === 'reply' ? this.selectedReview : null,
         productId: this.activeType === 'copywrite' ? this.selectedProductId : null,
         product: this.activeType === 'copywrite' ? this.selectedProduct : null,
-        timeRange:
-          this.activeType === 'analysis' || this.activeType === 'suggest'
-            ? this.analysisRange
-            : null
+        analysisRecordId: this.activeType === 'analysis' ? this.analysisRecordId : null,
+        timeRange: this.activeType === 'analysis' ? this.analysisRange : null,
+        shopSuggestData: this.activeType === 'suggest' ? this.buildSuggestRequestData(this.suggestData) : null
       })
     },
     async ensureSessionForSend(type) {
@@ -2494,7 +2901,7 @@ export default {
         return '请分析店铺 ' + this.currentAnalysisRangeLabel + ' 的经营状况，并输出关键问题与建议。'
       }
       if (type === 'suggest') {
-        return '请基于店铺 ' + this.currentAnalysisRangeLabel + ' 的经营数据给出可执行的改进建议。'
+        return '请基于当前经营改进数据给出可执行的优化建议。'
       }
       return String(this.activeFeature.title || '请生成内容').trim()
     },
@@ -2505,8 +2912,16 @@ export default {
       const reviewId = settings.reviewId || (review && review.id) || this.selectedReviewId || null
       const productId = settings.productId || (product && product.id) || this.selectedProductId || null
       const timeRange =
-        type === 'analysis' || type === 'suggest'
+        type === 'analysis'
           ? settings.timeRange || this.analysisRange
+          : null
+      const analysisRecordId =
+        type === 'analysis'
+          ? settings.analysisRecordId || this.analysisRecordId || null
+          : null
+      const shopSuggestData =
+        type === 'suggest'
+          ? this.buildSuggestRequestData(settings.shopSuggestData || this.suggestData)
           : null
       return {
         sessionId: session.id,
@@ -2515,7 +2930,9 @@ export default {
         message: this.buildRequestMessage(type, instruction, options),
         reviewId: reviewId,
         productId: productId,
-        timeRange: timeRange
+        timeRange: timeRange,
+        analysisRecordId: analysisRecordId,
+        shopSuggestData: shopSuggestData
       }
     },
     buildSessionTitle(message) {
@@ -2543,17 +2960,17 @@ export default {
           review: null,
           productId: null,
           product: null,
-          timeRange: null
+          analysisRecordId: null,
+          timeRange: null,
+          shopSuggestData: null
         },
         options
       )
-
       const requestInstruction = String(message || '').trim()
       const displayMessage = String(settings.displayMessage || requestInstruction).trim()
       if ((!requestInstruction && !settings.allowEmptyInstruction) || !displayMessage) {
         return
       }
-
       let session = settings.session
       if (!session) {
         session = await this.ensureSessionForSend(settings.type)
@@ -2561,14 +2978,16 @@ export default {
       if (!session) {
         return
       }
-
       const hasUserMessage = (session.messages || []).some(function (item) {
         return item.role === 'user' && item.content
       })
       const now = Date.now()
       const targetReview = settings.review || this.selectedReview
       const targetProduct = settings.product || this.selectedProduct
-
+      const targetAnalysisRecordId =
+        settings.type === 'analysis'
+          ? settings.analysisRecordId || this.analysisRecordId || null
+          : null
       this.resetTextInputs()
       session.type = settings.type
       session.updatedAt = now
@@ -2579,17 +2998,17 @@ export default {
         type: settings.type,
         reviewId: settings.reviewId || null,
         productId: settings.productId || null,
-        timeRange: settings.timeRange || '',
+        analysisRecordId: targetAnalysisRecordId,
+        timeRange: settings.type === 'analysis' ? settings.timeRange || '' : '',
         contextQuote:
           settings.type === 'reply'
             ? this.buildReviewQuote(targetReview)
             : settings.type === 'copywrite'
               ? this.buildProductQuote(targetProduct)
-              : settings.type === 'analysis' || settings.type === 'suggest'
+              : settings.type === 'analysis'
                 ? this.buildRangeQuote(settings.type, settings.timeRange)
                 : null
       })
-
       if (settings.type === 'reply') {
         this.replyActionReview = targetReview ? Object.assign({}, targetReview) : null
         this.selectedReviewId = null
@@ -2597,23 +3016,19 @@ export default {
       if (settings.type === 'copywrite') {
         this.selectedProductId = null
       }
-
       if (!hasUserMessage) {
         session.title = settings.sessionTitle || this.buildSessionTitle(requestInstruction || displayMessage)
         this.syncSessionTitle(session.id, session.title)
       }
-
       session.messages.push({
         role: 'ai',
         content: '',
         createTime: now
       })
-
       this.beginStreamState(session.id, session.messages.length - 1)
       this.$nextTick(() => {
         this.scrollToBottom()
       })
-
       const streamTask = createAiChatStream(
         this.buildChatRequestPayload(session, settings.type, requestInstruction, settings),
         {
@@ -2622,10 +3037,8 @@ export default {
           }
         }
       )
-
       this.activeStreamController = streamTask.controller
       this.activeStreamPromise = streamTask.promise
-
       try {
         await streamTask.promise
         this.flushStreamQueue()
@@ -2820,7 +3233,6 @@ export default {
   }
 }
 </script>
-
 <style scoped>
 .merchant-ai-page {
   padding: 20px;
@@ -2829,7 +3241,6 @@ export default {
     radial-gradient(circle at top left, rgba(24, 95, 165, 0.08), transparent 28%),
     linear-gradient(180deg, #f7f8fb 0%, #eef1f6 100%);
 }
-
 .assistant-shell {
   display: flex;
   flex-direction: column;
@@ -2842,7 +3253,6 @@ export default {
   box-shadow: 0 22px 60px rgba(15, 23, 42, 0.08);
   backdrop-filter: blur(14px);
 }
-
 .assistant-topbar {
   display: flex;
   align-items: center;
@@ -2852,7 +3262,6 @@ export default {
   border-bottom: 1px solid #e8ecf3;
   background: rgba(255, 255, 255, 0.92);
 }
-
 .topbar-left {
   display: flex;
   align-items: center;
@@ -2860,33 +3269,28 @@ export default {
   min-width: 0;
   flex: 1;
 }
-
 .assistant-logo {
   font-size: 15px;
   font-weight: 700;
   color: #1f2937;
   white-space: nowrap;
 }
-
 .shop-select {
   width: 220px;
   flex-shrink: 0;
 }
-
 .topbar-divider {
   width: 1px;
   height: 22px;
   background: #dde3ec;
   flex-shrink: 0;
 }
-
 .feature-tabs {
   display: flex;
   gap: 8px;
   min-width: 0;
   overflow-x: auto;
 }
-
 .feature-tab {
   display: inline-flex;
   align-items: center;
@@ -2900,15 +3304,12 @@ export default {
   white-space: nowrap;
   transition: all 0.2s ease;
 }
-
 .feature-tab:hover {
   background: #f4f7fb;
 }
-
 .feature-tab.active {
   font-weight: 600;
 }
-
 .feature-badge {
   display: inline-flex;
   align-items: center;
@@ -2919,39 +3320,32 @@ export default {
   font-size: 11px;
   font-weight: 700;
 }
-
 .feature-tab.tone-blue .feature-badge {
   background: #b8d7f8;
   color: #114f90;
 }
-
 .feature-tab.tone-blue.active {
   background: #e8f2fd;
   border-color: #bfd8f7;
   color: #114f90;
 }
-
 .feature-tab.tone-blue.active .feature-badge {
   background: #185fa5;
   color: #ffffff;
 }
-
 .feature-tab.tone-green .feature-badge {
   background: #bde8d7;
   color: #0c6b55;
 }
-
 .feature-tab.tone-green.active {
   background: #e8f7f1;
   border-color: #c2e6d9;
   color: #0c6b55;
 }
-
 .feature-tab.tone-green.active .feature-badge {
   background: #0f6e56;
   color: #ffffff;
 }
-
 .feature-tab.tone-orange .feature-badge {
   background: #f9d7a4;
   color: #8b5408;
@@ -2960,39 +3354,32 @@ export default {
   border-color: #f6d8aa;
   color: #8b5408;
 }
-
 .feature-tab.tone-orange.active .feature-badge {
   background: #c17a1f;
   color: #ffffff;
 }
-
 .feature-tab.tone-purple .feature-badge {
   background: #ddd7fb;
   color: #4d43ae;
 }
-
 .feature-tab.tone-purple.active {
   background: #f0edff;
   border-color: #d9d1fb;
   color: #4d43ae;
 }
-
 .feature-tab.tone-purple.active .feature-badge {
   background: #5a50c5;
   color: #ffffff;
 }
-
 .topbar-right {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
 }
-
 .session-menu {
   position: relative;
 }
-
 .session-trigger,
 .new-session-btn {
   display: inline-flex;
@@ -3007,26 +3394,22 @@ export default {
   cursor: pointer;
   transition: all 0.2s ease;
 }
-
 .session-trigger:hover,
 .new-session-btn:hover:not(:disabled) {
   border-color: #bfd1e5;
   background: #f6f9fc;
 }
-
 .new-session-btn {
   border-color: #bdd5f3;
   background: #eaf3ff;
   color: #185fa5;
 }
-
 .session-trigger:disabled,
 .new-session-btn:disabled,
 .send-button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
-
 .session-dropdown {
   position: absolute;
   top: calc(100% + 8px);
@@ -3039,27 +3422,23 @@ export default {
   z-index: 30;
   overflow: hidden;
 }
-
 .dropdown-header {
   padding: 12px 14px 8px;
   font-size: 12px;
   color: #98a2b3;
   border-bottom: 1px solid #eef2f7;
 }
-
 .dropdown-list {
   max-height: 280px;
   overflow-y: auto;
   padding: 6px;
 }
-
 .dropdown-empty {
   padding: 18px 14px;
   font-size: 13px;
   color: #98a2b3;
   text-align: center;
 }
-
 .dropdown-item {
   display: flex;
   align-items: center;
@@ -3068,20 +3447,16 @@ export default {
   border-radius: 12px;
   cursor: pointer;
 }
-
 .dropdown-item:hover {
   background: #f6f9fc;
 }
-
 .dropdown-item.active {
   background: #eaf3ff;
 }
-
 .dropdown-item-main {
   min-width: 0;
   flex: 1;
 }
-
 .dropdown-title {
   overflow: hidden;
   font-size: 13px;
@@ -3090,20 +3465,17 @@ export default {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
 .dropdown-meta {
   margin-top: 4px;
   font-size: 12px;
   color: #98a2b3;
 }
-
 .dropdown-actions {
   display: flex;
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
 }
-
 .dropdown-action {
   width: 26px;
   height: 26px;
@@ -3113,16 +3485,13 @@ export default {
   color: #98a2b3;
   cursor: pointer;
 }
-
 .dropdown-action:hover {
   background: #eef3f8;
   color: #185fa5;
 }
-
 .dropdown-action.delete:hover {
   color: #e24b4a;
 }
-
 .assistant-body {
   display: flex;
   flex: 1;
@@ -3130,7 +3499,6 @@ export default {
   min-height: 0;
   align-items: stretch;
 }
-
 .assistant-left {
   width: 368px;
   min-width: 368px;
@@ -3141,30 +3509,25 @@ export default {
   background: linear-gradient(180deg, #ffffff 0%, #f9fbfd 100%);
   overflow: hidden;
 }
-
 .panel-header {
   padding: 16px 16px 12px;
   border-bottom: 1px solid #eef2f7;
   flex-shrink: 0;
 }
-
 .panel-title {
   font-size: 13px;
   font-weight: 700;
   color: #111827;
 }
-
 .panel-subtitle {
   margin-top: 4px;
   font-size: 12px;
   line-height: 1.5;
   color: #98a2b3;
 }
-
 .panel-search {
   width: 100%;
 }
-
 .panel-filter-row {
   display: flex;
   gap: 8px;
@@ -3172,11 +3535,9 @@ export default {
   border-bottom: 1px solid #eef2f7;
   flex-shrink: 0;
 }
-
 .panel-filter-row.compact {
   padding-top: 14px;
 }
-
 .panel-filter-chips {
   display: flex;
   flex-wrap: wrap;
@@ -3185,7 +3546,6 @@ export default {
   border-bottom: 1px solid #eef2f7;
   flex-shrink: 0;
 }
-
 .filter-chip {
   padding: 5px 10px;
   border: 1px solid #d8dee8;
@@ -3195,27 +3555,22 @@ export default {
   font-size: 12px;
   cursor: pointer;
 }
-
 .filter-chip.active {
   background: #eaf3ff;
   border-color: #bdd5f3;
   color: #185fa5;
 }
-
 .reply-panel .panel-header {
   padding: 18px 18px 14px;
 }
-
 .reply-panel .panel-title {
   font-size: 16px;
 }
-
 .reply-panel .panel-subtitle {
   margin-top: 6px;
   font-size: 14px;
   line-height: 1.6;
 }
-
 .reply-panel ::v-deep .panel-search .el-input__inner {
   height: 44px;
   border: 1px solid #d4dbe6;
@@ -3224,16 +3579,13 @@ export default {
   font-size: 15px;
   color: #111827;
 }
-
 .reply-panel ::v-deep .panel-search .el-input__prefix {
   left: 8px;
   color: #98a2b3;
 }
-
 .reply-panel ::v-deep .panel-search .el-input__inner::placeholder {
   color: #98a2b3;
 }
-
 .reply-panel .filter-chip {
   min-width: 74px;
   height: 34px;
@@ -3242,21 +3594,17 @@ export default {
   border-radius: 999px;
   font-size: 14px;
 }
-
 .reply-panel .filter-chip.active {
   background: #eaf3ff;
   border-color: #b8d5f4;
 }
-
 .reply-panel .card-top {
   align-items: flex-start;
 }
-
 .reply-panel .card-time {
   font-size: 14px;
   color: #667085;
 }
-
 .panel-summary-row {
   display: flex;
   justify-content: space-between;
@@ -3267,11 +3615,9 @@ export default {
   color: #98a2b3;
   flex-shrink: 0;
 }
-
 .panel-summary-total {
   color: #667085;
 }
-
 .panel-summary-badge {
   display: inline-flex;
   align-items: center;
@@ -3282,7 +3628,6 @@ export default {
   color: #bf7a14;
   font-weight: 600;
 }
-
 .panel-list {
   flex: 1;
   min-height: 0;
@@ -3290,26 +3635,22 @@ export default {
   padding: 12px;
   background: #fafbfd;
 }
-
 .panel-scroll-section {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   background: #fafbfd;
 }
-
 .panel-pagination {
   padding: 10px 12px 14px;
   border-top: 1px solid #eef2f7;
   background: #ffffff;
   flex-shrink: 0;
 }
-
 .panel-pagination ::v-deep .el-pagination {
   display: flex;
   justify-content: center;
 }
-
 .panel-pagination ::v-deep .btn-prev,
 .panel-pagination ::v-deep .btn-next,
 .panel-pagination ::v-deep .el-pager li {
@@ -3318,12 +3659,10 @@ export default {
   line-height: 28px;
   border-radius: 8px;
 }
-
 .panel-pagination ::v-deep .el-pager li.active {
   background: #185fa5;
   color: #ffffff;
 }
-
 .panel-empty,
 .panel-note {
   padding: 18px 16px;
@@ -3331,15 +3670,12 @@ export default {
   line-height: 1.7;
   color: #98a2b3;
 }
-
 .panel-scroll-section .data-card-list {
   border-bottom: none;
 }
-
 .panel-scroll-section .panel-note {
   padding-top: 0;
 }
-
 .review-card,
 .product-card {
   margin-bottom: 10px;
@@ -3350,20 +3686,17 @@ export default {
   cursor: pointer;
   transition: all 0.18s ease;
 }
-
 .review-card:hover,
 .product-card:hover {
   border-color: #bfd1e5;
   transform: translateY(-1px);
 }
-
 .review-card.active,
 .product-card.active {
   border-color: #bed4ef;
   background: #ffffff;
   box-shadow: 0 12px 28px rgba(24, 95, 165, 0.12);
 }
-
 .card-top,
 .card-bottom,
 .card-actions,
@@ -3373,12 +3706,10 @@ export default {
   justify-content: space-between;
   gap: 10px;
 }
-
 .card-stars {
   font-size: 12px;
   color: #ef9f27;
 }
-
 .card-rating,
 .context-rating {
   display: flex;
@@ -3386,35 +3717,28 @@ export default {
   flex-wrap: wrap;
   gap: 4px;
 }
-
 .context-rating {
   margin-top: 12px;
 }
-
 .rating-star {
   font-size: 16px;
   line-height: 1;
   color: #d0d7e2;
 }
-
 .rating-star.small {
   font-size: 13px;
 }
-
 .rating-star.active {
   color: #ef9f27;
 }
-
 .rating-text {
   margin-left: 4px;
   font-size: 12px;
   color: #667085;
 }
-
 .rating-text.inline {
   margin-left: 2px;
 }
-
 .card-time,
 .card-source,
 .product-subtitle,
@@ -3445,7 +3769,6 @@ export default {
   word-break: break-word;
   white-space: pre-wrap;
 }
-
 .card-content {
   margin: 10px 0;
   font-size: 14px;
@@ -3454,7 +3777,6 @@ export default {
   display: block;
   overflow: visible;
 }
-
 .review-meta-line {
   justify-content: flex-start;
   flex-wrap: wrap;
@@ -3462,7 +3784,6 @@ export default {
   gap: 6px;
   color: #667085;
 }
-
 .review-user-avatar {
   display: inline-flex;
   align-items: center;
@@ -3474,22 +3795,18 @@ export default {
   flex-shrink: 0;
   background: #e6f0fb;
 }
-
 .review-user-avatar.medium {
   width: 24px;
   height: 24px;
 }
-
 .review-user-avatar.small {
   width: 20px;
   height: 20px;
 }
-
 .review-user-avatar-image {
   width: 100%;
   height: 100%;
 }
-
 .review-user-badge {
   display: inline-flex;
   align-items: center;
@@ -3503,18 +3820,15 @@ export default {
   font-weight: 700;
   flex-shrink: 0;
 }
-
 .context-user-meta {
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
-
 .message-quote-user {
   font-weight: 600;
   color: #5b6b7f;
 }
-
 .review-user-name,
 .review-source-name {
   max-width: none;
@@ -3523,16 +3837,13 @@ export default {
   text-overflow: initial;
   white-space: normal;
 }
-
 .review-source-name {
   color: #98a2b3;
 }
-
 .review-meta-sep {
   color: #c0c8d2;
   flex-shrink: 0;
 }
-
 .card-tag {
   display: inline-flex;
   align-items: center;
@@ -3541,17 +3852,14 @@ export default {
   border-radius: 999px;
   font-size: 13px;
 }
-
 .card-tag.success {
   background: #eaf5e4;
   color: #3c6d13;
 }
-
 .card-tag.warning {
   background: #fff1df;
   color: #a15b00;
 }
-
 .action-btn {
   min-width: 102px;
   height: 40px;
@@ -3565,13 +3873,11 @@ export default {
   cursor: pointer;
   transition: all 0.18s ease;
 }
-
 .action-btn:hover {
   border-color: #9fc0e4;
   color: #185fa5;
   box-shadow: 0 8px 18px rgba(24, 95, 165, 0.1);
 }
-
 .ghost-action {
   margin-top: 10px;
   height: 28px;
@@ -3582,12 +3888,10 @@ export default {
   color: #185fa5;
   cursor: pointer;
 }
-
 .product-card {
   display: flex;
   gap: 10px;
 }
-
 .product-cover {
   display: inline-flex;
   align-items: center;
@@ -3600,24 +3904,20 @@ export default {
   background: #f8fafc;
   flex-shrink: 0;
 }
-
 .product-cover.large {
   width: 56px;
   height: 56px;
   border-radius: 14px;
 }
-
 .product-cover.quote {
   width: 44px;
   height: 44px;
   border-radius: 12px;
 }
-
 .product-cover-image {
   width: 100%;
   height: 100%;
 }
-
 .product-cover-fallback {
   display: inline-flex;
   align-items: center;
@@ -3629,26 +3929,21 @@ export default {
   font-size: 16px;
   font-weight: 700;
 }
-
 .message-product-card {
   display: flex;
   align-items: flex-start;
   gap: 10px;
 }
-
 .message-product-card.context {
   margin-top: 12px;
 }
-
 .message-product-card.compact .product-subtitle {
   -webkit-line-clamp: 1;
 }
-
 .product-main {
   min-width: 0;
   flex: 1;
 }
-
 .product-name {
   overflow: hidden;
   font-size: 13px;
@@ -3657,7 +3952,6 @@ export default {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
 .product-subtitle {
   margin-top: 4px;
   line-height: 1.5;
@@ -3666,17 +3960,14 @@ export default {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
-
 .product-meta {
   margin-top: 8px;
 }
-
 .product-price {
   font-size: 13px;
   font-weight: 700;
   color: #e24b4a;
 }
-
 .data-card-list {
   display: flex;
   flex-direction: column;
@@ -3684,38 +3975,161 @@ export default {
   padding: 12px 16px 16px;
   border-bottom: 1px solid #eef2f7;
 }
-
 .data-card-list.no-border {
   border-bottom: none;
 }
-
 .data-card {
   padding: 12px 14px;
   border-radius: 14px;
   background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
   border: 1px solid #e7ecf3;
 }
-
 .data-label {
   font-size: 12px;
   color: #667085;
 }
-
 .data-value {
   margin-top: 4px;
   font-size: 22px;
   font-weight: 700;
   color: #111827;
 }
-
 .data-value.small {
   font-size: 15px;
 }
-
+.product-rank-card {
+  padding: 14px;
+}
+.product-rank-card .data-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1f2937;
+}
+.product-rank-card.rank-hot {
+  background: linear-gradient(180deg, #fff8ec 0%, #ffffff 100%);
+  border-color: #f3dfbf;
+}
+.product-rank-card.rank-slow {
+  background: linear-gradient(180deg, #fff6f2 0%, #ffffff 100%);
+  border-color: #f2d9cc;
+}
+.product-rank-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+.product-rank-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #eef2f7;
+}
+.product-rank-badge {
+  width: 22px;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 16px;
+  line-height: 1;
+}
+.product-rank-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.product-rank-sales {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #185fa5;
+}
+.product-rank-card.rank-hot .product-rank-sales {
+  color: #b45309;
+}
+.product-rank-card.rank-slow .product-rank-sales {
+  color: #c2410c;
+}
+.product-rank-empty {
+  margin-top: 12px;
+  padding: 14px 12px;
+  border-radius: 12px;
+  border: 1px dashed #d6dee8;
+  background: rgba(255, 255, 255, 0.86);
+  text-align: center;
+  font-size: 13px;
+  color: #98a2b3;
+}
+.product-rank-card .data-sub {
+  margin-top: 10px;
+  line-height: 1.6;
+}
+.suggest-section {
+  padding: 0 16px 16px;
+}
+.suggest-section-title {
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1f2937;
+}
+.suggest-product-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.suggest-product-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e7ecf3;
+  background: #ffffff;
+}
+.suggest-product-dot {
+  flex-shrink: 0;
+  font-size: 18px;
+  line-height: 1;
+  color: #98a2b3;
+}
+.suggest-product-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  color: #1f2937;
+}
+.suggest-product-sales {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #c2410c;
+}
+.suggest-keyword-list {
+  display: flex;
+  flex-wrap: wrap;
+}
+.suggest-keyword-tag {
+  margin-right: 6px;
+  margin-bottom: 6px;
+  cursor: pointer;
+}
+.suggest-empty {
+  margin-top: 0;
+}
 .placeholder-gap {
   padding-top: 16px;
 }
-
 .assistant-chat {
   display: flex;
   flex: 1;
@@ -3726,7 +4140,6 @@ export default {
     radial-gradient(circle at top right, rgba(24, 95, 165, 0.05), transparent 32%),
     linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
 }
-
 .chat-header {
   display: flex;
   align-items: flex-start;
@@ -3736,7 +4149,6 @@ export default {
   border-bottom: 1px solid #e8ecf3;
   background: rgba(255, 255, 255, 0.9);
 }
-
 .chat-title,
 .welcome-title,
 .state-title,
@@ -3744,18 +4156,15 @@ export default {
 .context-title {
   color: #111827;
 }
-
 .chat-title {
   font-size: 18px;
   font-weight: 700;
 }
-
 .chat-subtitle {
   margin-top: 6px;
   font-size: 13px;
   line-height: 1.6;
 }
-
 .chat-session-tag,
 .context-badge {
   display: inline-flex;
@@ -3771,7 +4180,6 @@ export default {
   text-overflow: ellipsis;
   border: 1px solid #d9e7f7;
 }
-
 .chat-message-list {
   flex: 1;
   min-height: 0;
@@ -3779,7 +4187,6 @@ export default {
   overscroll-behavior: contain;
   padding: 20px 22px;
 }
-
 .context-card {
   margin-bottom: 18px;
   padding: 16px 18px;
@@ -3787,44 +4194,37 @@ export default {
   border-radius: 18px;
   background: linear-gradient(135deg, #f8fbff 0%, #ffffff 100%);
 }
-
 .context-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
 }
-
 .context-title {
   font-size: 15px;
   font-weight: 700;
 }
-
 .context-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 6px;
 }
-
 .context-content {
   margin-top: 12px;
   font-size: 14px;
   line-height: 1.8;
   color: #374151;
 }
-
 .review-image-list {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 10px;
 }
-
 .review-image-list.compact {
   margin-top: 8px;
 }
-
 .review-image-thumb {
   width: 56px;
   height: 56px;
@@ -3834,18 +4234,15 @@ export default {
   background: #f8fafc;
   flex-shrink: 0;
 }
-
 .review-image-thumb.compact {
   width: 42px;
   height: 42px;
   border-radius: 8px;
 }
-
 .review-image-thumb ::v-deep .el-image__inner {
   width: 100%;
   height: 100%;
 }
-
 .chat-empty-state {
   display: flex;
   flex-direction: column;
@@ -3855,7 +4252,6 @@ export default {
   padding: 40px 24px;
   text-align: center;
 }
-
 .state-mark,
 .message-avatar {
   display: inline-flex;
@@ -3870,7 +4266,6 @@ export default {
   font-weight: 700;
   border: 1px solid #d8e6f5;
 }
-
 .state-mark {
   width: 56px;
   height: 56px;
@@ -3878,56 +4273,46 @@ export default {
   margin-bottom: 14px;
   font-size: 22px;
 }
-
 .state-title {
   font-size: 22px;
   font-weight: 700;
 }
-
 .state-text {
   margin-top: 10px;
   max-width: 420px;
   font-size: 14px;
   line-height: 1.7;
 }
-
 .message-row {
   display: flex;
   margin-bottom: 18px;
 }
-
 .message-row.user {
   justify-content: flex-end;
 }
-
 .message-row.ai {
   align-items: flex-start;
 }
-
 .message-avatar {
   margin-right: 12px;
   flex-shrink: 0;
 }
-
 .message-bubble {
   max-width: 78%;
   padding: 14px 16px;
   border-radius: 18px;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
 }
-
 .message-bubble.ai {
   border: 1px solid #e4e9f1;
   border-top-left-radius: 6px;
   background: #ffffff;
 }
-
 .message-bubble.user {
   border: 1px solid #1b6bb7;
   border-top-right-radius: 6px;
   background: linear-gradient(135deg, #185fa5 0%, #2d7fca 100%);
 }
-
 .message-user-stack {
   display: flex;
   flex-direction: column;
@@ -3935,11 +4320,9 @@ export default {
   width: 100%;
   max-width: 78%;
 }
-
 .message-user-stack .message-bubble.user {
   max-width: 100%;
 }
-
 .message-bubble.user.stacked {
   margin-top: -2px;
   padding: 12px 18px;
@@ -3947,7 +4330,6 @@ export default {
   border-top-left-radius: 14px;
   box-shadow: 0 8px 20px rgba(24, 95, 165, 0.2);
 }
-
 .message-quote-card {
   width: 100%;
   margin: 0;
@@ -3957,16 +4339,13 @@ export default {
   background: #f7f4ef;
   box-shadow: inset 0 0 0 1px #edf1f6;
 }
-
 .message-quote-card.review {
   background: #f6f4ef;
 }
-
 .message-quote-card .product-name,
 .context-preview .product-name {
   white-space: normal;
 }
-
 .message-quote-head {
   display: flex;
   align-items: center;
@@ -3977,20 +4356,16 @@ export default {
   color: #5b6b7f;
   flex-wrap: wrap;
 }
-
 .message-quote-title {
   font-weight: 700;
   color: #356ea8;
 }
-
 .message-quote-stars {
   color: #ef9f27;
 }
-
 .message-quote-time {
   color: #98a2b3;
 }
-
 .message-quote-content {
   font-size: 13px;
   line-height: 1.6;
@@ -3998,23 +4373,19 @@ export default {
   white-space: pre-wrap;
   word-break: break-word;
 }
-
 .message-bubble.user .message-content {
   color: #ffffff;
 }
-
 .message-content {
   font-size: 14px;
   line-height: 1.8;
   color: #1f2937;
 }
-
 .typing-indicator {
   display: inline-flex;
   align-items: center;
   min-height: 24px;
 }
-
 .typing-dot {
   width: 8px;
   height: 8px;
@@ -4023,16 +4394,13 @@ export default {
   background: #c0c8d2;
   animation: typing-bounce 1s infinite ease-in-out;
 }
-
 .typing-dot:nth-child(2) {
   animation-delay: 0.15s;
 }
-
 .typing-dot:nth-child(3) {
   margin-right: 0;
   animation-delay: 0.3s;
 }
-
 .reply-action-bar {
   display: flex;
   align-items: center;
@@ -4044,24 +4412,20 @@ export default {
   border-radius: 18px;
   background: #f4f9ff;
 }
-
 .reply-action-title {
   font-size: 14px;
   font-weight: 700;
 }
-
 .reply-action-buttons {
   display: flex;
   gap: 10px;
   flex-shrink: 0;
 }
-
 .chat-input-area {
   padding: 18px 22px 22px;
   border-top: 1px solid #e8ecf3;
   background: rgba(255, 255, 255, 0.92);
 }
-
 .chat-context-card {
   margin-bottom: 10px;
   padding: 12px 14px;
@@ -4069,25 +4433,21 @@ export default {
   border-radius: 16px;
   background: #f7fbff;
 }
-
 .chat-context-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
 }
-
 .chat-context-main {
   min-width: 0;
   flex: 1;
 }
-
 .chat-context-title {
   font-size: 13px;
   font-weight: 700;
   color: #185fa5;
 }
-
 .chat-context-close {
   display: inline-flex;
   align-items: center;
@@ -4102,13 +4462,11 @@ export default {
   flex-shrink: 0;
   transition: all 0.18s ease;
 }
-
 .chat-context-close:hover {
   border-color: #b8cfe7;
   color: #185fa5;
   background: #f3f8fe;
 }
-
 .chat-context-meta {
   display: flex;
   flex-wrap: wrap;
@@ -4118,7 +4476,6 @@ export default {
   line-height: 1.6;
   color: #667085;
 }
-
 .chat-context-content {
   margin-top: 10px;
   font-size: 13px;
@@ -4127,7 +4484,6 @@ export default {
   white-space: pre-wrap;
   word-break: break-word;
 }
-
 .chat-context-tip {
   margin-bottom: 10px;
   padding: 10px 12px;
@@ -4138,7 +4494,6 @@ export default {
   font-size: 12px;
   line-height: 1.6;
 }
-
 .chat-input-box {
   display: flex;
   align-items: flex-end;
@@ -4149,16 +4504,13 @@ export default {
   background: #f8fafc;
   transition: all 0.2s ease;
 }
-
 .chat-input-box:focus-within {
   border-color: #185fa5;
   box-shadow: 0 0 0 4px rgba(24, 95, 165, 0.08);
 }
-
 .chat-input-box.disabled {
   background: #f1f5f9;
 }
-
 .chat-textarea {
   flex: 1;
   min-height: 28px;
@@ -4173,7 +4525,6 @@ export default {
   resize: none;
   font-family: inherit;
 }
-
 .send-button {
   display: inline-flex;
   align-items: center;
@@ -4186,36 +4537,30 @@ export default {
   color: #ffffff;
   cursor: pointer;
 }
-
 .chat-hint {
   margin-top: 10px;
   font-size: 12px;
   text-align: center;
 }
-
 @keyframes typing-bounce {
   0%,
   100% {
     transform: translateY(0);
     opacity: 0.35;
   }
-
   50% {
     transform: translateY(-4px);
     opacity: 1;
   }
 }
-
 @media (max-width: 1280px) {
   .assistant-shell {
     height: auto;
   }
-
   .assistant-body {
     height: auto;
     flex-direction: column;
   }
-
   .assistant-left {
     width: 100%;
     min-width: 0;
@@ -4223,28 +4568,23 @@ export default {
     border-right: none;
     border-bottom: 1px solid #e8ecf3;
   }
-
   .panel-list {
     max-height: 320px;
   }
-
   .panel-scroll-section {
     max-height: 320px;
   }
 }
-
 @media (max-width: 1500px) and (min-width: 1281px) {
   .assistant-left {
     width: 340px;
     min-width: 340px;
   }
 }
-
 @media (max-width: 900px) {
   .merchant-ai-page {
     padding: 12px;
   }
-
   .assistant-topbar,
   .chat-header,
   .chat-message-list,
@@ -4252,7 +4592,6 @@ export default {
     padding-left: 14px;
     padding-right: 14px;
   }
-
   .assistant-topbar,
   .topbar-left,
   .chat-header,
@@ -4261,44 +4600,35 @@ export default {
     flex-direction: column;
     align-items: stretch;
   }
-
   .topbar-left,
   .topbar-right {
     width: 100%;
   }
-
   .shop-select {
     width: 100%;
   }
-
   .topbar-right {
     justify-content: space-between;
   }
-
   .feature-tabs {
     width: 100%;
   }
-
   .session-menu,
   .session-trigger,
   .new-session-btn {
     width: 100%;
   }
-
   .session-dropdown {
     left: 0;
     right: auto;
     width: 100%;
   }
-
   .message-bubble {
     max-width: 100%;
   }
-
   .reply-action-buttons {
     width: 100%;
   }
-
   .reply-action-buttons .el-button {
     flex: 1;
   }
