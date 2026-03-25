@@ -1,6 +1,6 @@
 import request from '@/utils/request'
 
-// 查询优惠券订单表列表
+// 查询订单列表
 export function listOrder(query) {
   return request({
     url: 'order/list',
@@ -9,7 +9,7 @@ export function listOrder(query) {
   })
 }
 
-// 查询优惠券订单表详细
+// 查询订单详情
 export function getOrder(id) {
   return request({
     url: 'order/' + id,
@@ -17,7 +17,7 @@ export function getOrder(id) {
   })
 }
 
-// 新增优惠券订单表
+// 新增订单
 export function addOrder(data) {
   return request({
     url: 'order',
@@ -26,7 +26,7 @@ export function addOrder(data) {
   })
 }
 
-// 修改优惠券订单表
+// 修改订单
 export function updateOrder(data) {
   return request({
     url: 'order',
@@ -35,7 +35,7 @@ export function updateOrder(data) {
   })
 }
 
-// 删除优惠券订单表
+// 删除订单
 export function delOrder(id) {
   return request({
     url: 'order/' + id,

@@ -43,9 +43,7 @@ export function delProduct(id) {
     })
 }
 
-// Publish Product (Batch)
-// Note: Adjusted from allPublish/publish in voucher.js
-// If backend API for publishing changed, update here. Assuming generic /product/... or keeping mostly same structure but under /product
+// Publish Product
 export function publishProduct(id) {
     return request({
         url: '/product/publish/' + id,

@@ -39,10 +39,10 @@
             @change="handleQuery"
             >
             <el-option
-                v-for="voucher in voucherList"
-                :key="voucher.id"
-                :label="voucher.title"
-                :value="voucher.id"
+                v-for="product in productOptions"
+                :key="product.id"
+                :label="product.title"
+                :value="product.id"
             />
             </el-select>
         </el-form-item>
@@ -145,7 +145,7 @@
         <el-table-column label="商品信息" min-width="250">
              <template slot-scope="scope">
                 <div class="order-goods-info">
-                   <div class="voucher-title">{{ scope.row.productName || getVoucherTitle(scope.row.voucherId) }}</div>
+                   <div class="product-title">{{ scope.row.productName || getProductTitle(scope.row.voucherId) }}</div>
                    <div class="shop-name"><i class="el-icon-shop"></i> {{ scope.row.shopName || getShopName(scope.row.shopId) }}</div>
                 </div>
             </template>
@@ -268,10 +268,10 @@
             @focus="searchProducts('')"
           >
             <el-option
-              v-for="voucher in voucherList"
-              :key="voucher.id"
-              :label="voucher.title"
-              :value="voucher.id"
+              v-for="product in productOptions"
+              :key="product.id"
+              :label="product.title"
+              :value="product.id"
             />
           </el-select>
         </el-form-item>
@@ -423,7 +423,7 @@
                    <div class="card-title">商品信息</div>
                    <div class="info-row">
                         <span class="label">商品:</span>
-                       <span class="val">{{ currentOrder.productName || getVoucherTitle(currentOrder.voucherId) }}</span>
+                       <span class="val">{{ currentOrder.productName || getProductTitle(currentOrder.voucherId) }}</span>
                    </div>
                     <div class="info-row">
                        <span class="label">所属店铺:</span>
@@ -482,12 +482,12 @@ export default {
       showSearch: true,
       // 总条数
       total: 0,
-      // 优惠券订单表表格数据
+      // 订单表格数据
       orderList: [],
       // 用户列表
       userList: [],
-      // 优惠券列表
-      voucherList: [],
+      // 商品选项
+      productOptions: [],
       // 店铺列表
       shopList: [],
       userSearchLoading: false,
@@ -582,12 +582,12 @@ this.getList()
       this.productSearchLoading = true
       try {
         const response = await searchProductOptions(keyword || '')
-        this.voucherList = this.readSearchRows(response).map(item => ({
+        this.productOptions = this.readSearchRows(response).map(item => ({
           id: item.id,
           title: item.name || item.title || item.productName || `商品${item.id}`
         }))
       } catch (error) {
-        this.voucherList = []
+        this.productOptions = []
       } finally {
         this.productSearchLoading = false
       }
@@ -606,7 +606,7 @@ this.getList()
         this.shopSearchLoading = false
       }
     },
-    /** 查询优惠券订单表列表 */
+    /** 查询订单列表 */
     getList() {
       this.loading = true
       listOrder(this.queryParams).then(response => {
@@ -616,7 +616,7 @@ this.getList()
             id: item.userId,
             nickName: item.userName || item.nickName || item.userNickname || `用户${item.userId}`
           })
-          this.voucherList = this.mergeOption(this.voucherList, {
+          this.productOptions = this.mergeOption(this.productOptions, {
             id: item.voucherId,
             title: item.productName || item.voucherTitle || item.title || `商品${item.voucherId}`
           })
@@ -634,8 +634,8 @@ this.getList()
     getUserList() {
       return this.searchUsers('')
     },
-    /** 获取优惠券列表 */
-    getVoucherList() {
+    /** 获取商品选项 */
+    getProductOptions() {
       return this.searchProducts('')
     },
     /** 获取店铺列表 */
@@ -647,16 +647,16 @@ this.getList()
       const user = this.userList.find(item => String(item.id) === String(userId))
       return user ? (user.nickName || user.userName) : '未知用户'
     },
-    /** 根据优惠券ID获取优惠券标题 */
-    getVoucherTitle(voucherId) {
-      const voucher = this.voucherList.find(item => String(item.id) === String(voucherId))
-      return voucher ? voucher.title : '未知商品'
+    /** 根据商品ID获取商品标题 */
+    getProductTitle(voucherId) {
+      const product = this.productOptions.find(item => String(item.id) === String(voucherId))
+      return product ? product.title : '未知商品'
     },
-    /** 根据优惠券ID获取优惠券详细信息 */
-    getVoucherInfo(voucherId) {
-      const voucher = this.voucherList.find(item => String(item.id) === String(voucherId))
-      if (!voucher) return '未知商品'
-      return `商品：${voucher.title}`
+    /** 根据商品ID获取商品详细信息 */
+    getProductInfo(voucherId) {
+      const product = this.productOptions.find(item => String(item.id) === String(voucherId))
+      if (!product) return '未知商品'
+      return `商品：${product.title}`
     },
     /** 根据店铺ID获取店铺名称 */
     getShopName(shopId) {
@@ -758,7 +758,7 @@ this.getList()
           id: this.form.userId,
           nickName: response.data.userName || currentRow.userName || `用户${this.form.userId}`
         })
-        this.voucherList = this.mergeOption(this.voucherList, {
+        this.productOptions = this.mergeOption(this.productOptions, {
           id: this.form.voucherId,
           title: response.data.productName || currentRow.productName || `商品${this.form.voucherId}`
         })
@@ -776,7 +776,7 @@ this.getList()
         id: row.userId,
         nickName: row.userName || `用户${row.userId}`
       })
-      this.voucherList = this.mergeOption(this.voucherList, {
+      this.productOptions = this.mergeOption(this.productOptions, {
         id: row.voucherId,
         title: row.productName || `商品${row.voucherId}`
       })
@@ -880,7 +880,7 @@ this.getList()
 
 /* 表格样式优化 */
 .order-goods-info {
-    .voucher-title {
+.product-title {
         font-weight: 600;
         color: #303133;
         font-size: 14px;

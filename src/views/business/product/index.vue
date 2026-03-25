@@ -129,7 +129,7 @@
         <el-table-column type="selection" width="55" align="center" />
         <el-table-column label="商品信息" min-width="220">
             <template slot-scope="scope">
-                <div class="voucher-info-cell">
+                <div class="product-info-cell">
                     <div class="v-icon" :class="scope.row.activityType === 1 ? 'seckill' : 'normal'" style="overflow: hidden; display: flex; align-items: center; justify-content: center;">
                         <ImagePreview v-if="scope.row.coverImg" :src="scope.row.coverImg" :width="40" :height="40" />
                         <i v-else :class="scope.row.activityType === 1 ? 'el-icon-alarm-clock' : 'el-icon-goods'"></i>
@@ -229,7 +229,7 @@
                 :class="scope.row.status === 1 ? 'text-warning' : 'text-success'"
                 :icon="scope.row.status === 1 ? 'el-icon-bottom' : 'el-icon-top'"
                 @click="handleStatusChange(scope.row)"
-                v-hasPermi="['marketing:voucher:edit']"
+                v-hasPermi="['business:product:edit']"
             >{{ scope.row.status === 1 ? '下架' : '上架' }}</el-button>
              <el-button
                 size="mini"
@@ -253,7 +253,7 @@
     </el-card>
 
     <!-- 添加或修改商品对话框 -->
-    <el-dialog :title="title" :visible.sync="open" width="700px" append-to-body custom-class="voucher-edit-dialog" top="5vh">
+    <el-dialog :title="title" :visible.sync="open" width="700px" append-to-body custom-class="product-edit-dialog" top="5vh">
       <el-form ref="form" :model="form" :rules="rules" label-width="120px" class="edit-form">
         
         <div class="form-section-title">基础信息</div>
@@ -440,8 +440,8 @@
     </el-dialog>
 
     <!-- 商品详情对话框 -->
-    <el-dialog :visible.sync="viewOpen" width="650px" append-to-body custom-class="voucher-detail-dialog">
-       <div class="voucher-ticket-header" :class="viewForm.activityType === 1 ? 'is-seckill' : 'is-normal'">
+    <el-dialog :visible.sync="viewOpen" width="650px" append-to-body custom-class="product-detail-dialog">
+      <div class="product-ticket-header" :class="viewForm.activityType === 1 ? 'is-seckill' : 'is-normal'">
            <div class="ticket-left">
                <div class="ticket-val">
                    <span class="unit">¥</span>{{ Number(viewForm.originalPrice).toFixed(2) }}
@@ -459,7 +459,7 @@
            </div>
        </div>
 
-       <div class="voucher-detail-content">
+        <div class="product-detail-content">
             <div class="detail-section">
                 <div class="section-title">基本信息</div>
                 <div class="info-grid">
@@ -760,7 +760,7 @@ export default {
         this.form.useEndTime = undefined
       }
     },
-    /** 查询优惠券列表 */
+    /** 查询商品列表 */
     getList() {
       this.loading = true
       listProduct(this.queryParams).then(response => {
@@ -1017,7 +1017,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.voucher-info-cell {
+.product-info-cell {
     display: flex;
     align-items: center;
     .v-icon {
@@ -1106,7 +1106,7 @@ export default {
     }
 }
 
-.voucher-ticket-header {
+.product-ticket-header {
     padding: 20px;
     color: #fff;
     border-radius: 8px 8px 0 0;
@@ -1180,7 +1180,7 @@ export default {
     }
 }
 
-.voucher-detail-content {
+.product-detail-content {
     padding: 20px;
     .detail-section {
         margin-bottom: 25px;
