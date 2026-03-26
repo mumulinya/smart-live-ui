@@ -63,8 +63,11 @@
         <el-table-column label="用户信息" min-width="170">
           <template slot-scope="{ row }">
             <div class="user-info-cell">
-              <div class="user-avatar-placeholder">
-                <i class="el-icon-user-solid"></i>
+              <div class="user-avatar-wrapper">
+                <image-preview v-if="row.avatar" :src="row.avatar" :width="36" :height="36" />
+                <div class="user-avatar-placeholder" v-else>
+                  <i class="el-icon-user-solid"></i>
+                </div>
               </div>
               <div class="user-detail">
                 <div class="user-nick">{{ row.nickName || '未知用户' }}</div>
@@ -331,6 +334,15 @@ export default {
   display: flex;
   align-items: center;
 }
+.user-avatar-wrapper {
+  margin-right: 12px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+.user-avatar-wrapper ::v-deep .el-image {
+  border-radius: 50%;
+}
 .user-avatar-placeholder {
   width: 36px;
   height: 36px;
@@ -341,8 +353,6 @@ export default {
   align-items: center;
   justify-content: center;
   font-size: 18px;
-  margin-right: 12px;
-  flex-shrink: 0;
 }
 .user-detail {
   display: flex;

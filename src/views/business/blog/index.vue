@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <el-card class="box-card mb-4" shadow="never">
         <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="80px" class="search-form">
@@ -85,38 +85,7 @@
         </el-form>
 
         <el-row :gutter="10" class="mb8 op-btns">
-        <el-col :span="1.5">
-            <el-button
-            type="primary"
-            plain
-            icon="el-icon-plus"
-            size="mini"
-            @click="handleAdd"
-            v-hasPermi="['blog:blog:add']"
-            >新增笔记</el-button>
-        </el-col>
-        <el-col :span="1.5">
-            <el-button
-            type="success"
-            plain
-            icon="el-icon-edit"
-            size="mini"
-            :disabled="single"
-            @click="handleUpdate"
-            v-hasPermi="['blog:blog:edit']"
-            >修改</el-button>
-        </el-col>
-        <el-col :span="1.5">
-            <el-button
-            type="danger"
-            plain
-            icon="el-icon-delete"
-            size="mini"
-            :disabled="multiple"
-            @click="handleDelete"
-            v-hasPermi="['blog:blog:remove']"
-            >删除</el-button>
-        </el-col>
+
         <el-col :span="1.5">
             <el-button
             type="warning"
@@ -200,7 +169,7 @@
               </el-tag>
             </template>
         </el-table-column>
-        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200" fixed="right">
+        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="100" fixed="right">
             <template slot-scope="scope">
             <el-button
                 size="mini"
@@ -208,21 +177,6 @@
                 icon="el-icon-view"
                 @click="handleDetail(scope.row)"
             >详情</el-button>
-            <el-button
-                size="mini"
-                type="text"
-                icon="el-icon-edit"
-                @click="handleUpdate(scope.row)"
-                v-hasPermi="['blog:blog:edit']"
-            >修改</el-button>
-            <el-button
-                size="mini"
-                type="text"
-                icon="el-icon-delete"
-                class="text-danger"
-                @click="handleDelete(scope.row)"
-                v-hasPermi="['blog:blog:remove']"
-            >删除</el-button>
             </template>
         </el-table-column>
         </el-table>
@@ -755,7 +709,7 @@ export default {
           ...response.data
         }
         this.detailForm.imageList = this.detailForm.images ?
-          this.detailForm.images.split(',').map(img => img.trim()).filter(img => img) : []
+          this.detailForm.images.split(',').map(img => img.trim()).filter(img => img).map(img => img.startsWith('http') ? img : process.env.VUE_APP_BASE_API + img) : []
         this.detailOpen = true
       })
     },

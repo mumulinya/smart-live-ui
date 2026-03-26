@@ -27,38 +27,7 @@
         </el-form>
 
         <el-row :gutter="10" class="mb8 op-btns">
-        <el-col :span="1.5">
-            <el-button
-            type="primary"
-            plain
-            icon="el-icon-plus"
-            size="mini"
-            @click="handleAdd"
-            v-hasPermi="['user:user:add']"
-            >新增用户</el-button>
-        </el-col>
-        <el-col :span="1.5">
-            <el-button
-            type="success"
-            plain
-            icon="el-icon-edit"
-            size="mini"
-            :disabled="single"
-            @click="handleUpdate"
-            v-hasPermi="['user:user:edit']"
-            >修改</el-button>
-        </el-col>
-        <el-col :span="1.5">
-            <el-button
-            type="danger"
-            plain
-            icon="el-icon-delete"
-            size="mini"
-            :disabled="multiple"
-            @click="handleDelete"
-            v-hasPermi="['user:user:remove']"
-            >删除</el-button>
-        </el-col>
+        <!-- 移除了新增、修改、删除按钮，保留导出和其他操作 -->
         <el-col :span="1.5">
             <el-button
             type="warning"
@@ -120,18 +89,10 @@
             <el-button
                 size="mini"
                 type="text"
-                icon="el-icon-edit"
-                @click="handleUpdate(scope.row)"
-                v-hasPermi="['user:user:edit']"
-            >修改</el-button>
-            <el-button
-                size="mini"
-                type="text"
-                icon="el-icon-delete"
-                class="text-danger"
-                @click="handleDelete(scope.row)"
-                v-hasPermi="['user:user:remove']"
-            >删除</el-button>
+                icon="el-icon-view"
+                @click="handleDetail(scope.row)"
+                v-hasPermi="['user:user:query']"
+            >查看详情</el-button>
             </template>
         </el-table-column>
         </el-table>
@@ -145,9 +106,9 @@
         />
     </el-card>
 
-    <!-- 添加或修改用户对话框 -->
+    <!-- 查看用户详情对话框 -->
     <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body custom-class="user-edit-dialog">
-      <el-form ref="form" :model="form" :rules="rules" label-width="80px" class="edit-form">
+      <el-form ref="form" :model="form" label-width="80px" class="edit-form" disabled>
         <div class="dialog-profile-header" v-if="form.id">
              <div class="header-avatar">
                   <image-preview :src="form.icon" :width="60" :height="60" v-if="form.icon"/>
@@ -164,9 +125,6 @@
         <el-form-item label="手机号码" prop="phone">
           <el-input v-model="form.phone" placeholder="请输入手机号码" maxlength="11" show-word-limit/>
         </el-form-item>
-        <el-form-item label="登录密码" prop="password">
-            <el-input v-model="form.password" placeholder="请输入密码 (加密存储)" show-password />
-        </el-form-item>
         <el-form-item label="用户昵称" prop="nickName">
           <el-input v-model="form.nickName" placeholder="请输入昵称" maxlength="30" show-word-limit/>
         </el-form-item>
@@ -175,8 +133,7 @@
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="cancel">取 消</el-button>
-        <el-button type="primary" @click="submitForm">确 定</el-button>
+        <el-button @click="open = false">关 闭</el-button>
       </div>
     </el-dialog>
   </div>
@@ -279,51 +236,18 @@ export default {
       this.single = selection.length!==1
       this.multiple = !selection.length
     },
-    /** 新增按钮操作 */
-    handleAdd() {
+    /** 查看详情操作 */
+    handleDetail(row) {
       this.reset()
-      this.open = true
-      this.title = "添加用户"
-    },
-    /** 修改按钮操作 */
-    handleUpdate(row) {
-      this.reset()
-      const id = row.id || this.ids
+      const id = row.id
       getUser(id).then(response => {
+        if (response.data.icon && !response.data.icon.startsWith("http")) {
+          response.data.icon = process.env.VUE_APP_BASE_API + response.data.icon;
+        }
         this.form = response.data
         this.open = true
-        this.title = "修改用户"
+        this.title = "用户详情"
       })
-    },
-    /** 提交按钮 */
-    submitForm() {
-      this.$refs["form"].validate(valid => {
-        if (valid) {
-          if (this.form.id != null) {
-            updateUser(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功")
-              this.open = false
-              this.getList()
-            })
-          } else {
-            addUser(this.form).then(response => {
-              this.$modal.msgSuccess("新增成功")
-              this.open = false
-              this.getList()
-            })
-          }
-        }
-      })
-    },
-    /** 删除按钮操作 */
-    handleDelete(row) {
-      const ids = row.id || this.ids
-      this.$modal.confirm('是否确认删除用户编号为"' + ids + '"的数据项？').then(function() {
-        return delUser(ids)
-      }).then(() => {
-        this.getList()
-        this.$modal.msgSuccess("删除成功")
-      }).catch(() => {})
     },
     /** 导出按钮操作 */
     handleExport() {

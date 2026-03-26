@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <el-card class="box-card mb-4" shadow="never">
         <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" label-width="68px" class="search-form">
@@ -74,38 +74,7 @@
         </el-form>
 
         <el-row :gutter="10" class="mb8 op-btns">
-        <el-col :span="1.5">
-            <el-button
-            type="primary"
-            plain
-            icon="el-icon-plus"
-            size="mini"
-            @click="handleAdd"
-            v-hasPermi="['comment:comment:add']"
-            >新增评论</el-button>
-        </el-col>
-        <el-col :span="1.5">
-            <el-button
-            type="success"
-            plain
-            icon="el-icon-edit"
-            size="mini"
-            :disabled="single"
-            @click="handleUpdate"
-            v-hasPermi="['comment:comment:edit']"
-            >修改</el-button>
-        </el-col>
-        <el-col :span="1.5">
-            <el-button
-            type="danger"
-            plain
-            icon="el-icon-delete"
-            size="mini"
-            :disabled="multiple"
-            @click="handleDelete"
-            v-hasPermi="['comment:comment:remove']"
-            >删除</el-button>
-        </el-col>
+
         <el-col :span="1.5">
             <el-button
             type="warning"
@@ -163,7 +132,7 @@
             </el-tag>
             </template>
         </el-table-column>
-        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180" fixed="right">
+        <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="100" fixed="right">
             <template slot-scope="scope">
             <el-button
                 size="mini"
@@ -172,21 +141,6 @@
                 @click="handleDetail(scope.row)"
                 v-hasPermi="['comment:comment:query']"
             >详情</el-button>
-            <el-button
-                size="mini"
-                type="text"
-                icon="el-icon-edit"
-                @click="handleUpdate(scope.row)"
-                v-hasPermi="['comment:comment:edit']"
-            >修改</el-button>
-            <el-button
-                size="mini"
-                type="text"
-                icon="el-icon-delete"
-                class="text-danger"
-                @click="handleDelete(scope.row)"
-                v-hasPermi="['comment:comment:remove']"
-            >删除</el-button>
             </template>
         </el-table-column>
         </el-table>
@@ -292,14 +246,14 @@
                 <div class="contenter-html" v-html="detailForm.content"></div>
            </div>
 
-           <div class="comment-images" v-if="detailForm.images && detailForm.images.length > 0">
+           <div class="comment-images" v-if="detailForm.imageList && detailForm.imageList.length > 0">
                <div class="img-label">图片附件</div>
                <div class="img-grid">
                     <el-image
-                    v-for="(image, index) in detailForm.images.split(',')"
+                    v-for="(image, index) in detailForm.imageList"
                     :key="index"
                     :src="image"
-                    :preview-src-list="detailForm.images.split(',')"
+                    :preview-src-list="detailForm.imageList"
                     class="c-img"
                     fit="cover"
                     ></el-image>
@@ -541,6 +495,8 @@ export default {
       this.detailForm = {
         ...row
       }
+      this.detailForm.imageList = this.detailForm.images ?
+          this.detailForm.images.split(',').map(img => img.trim()).filter(img => img).map(img => img.startsWith('http') ? img : process.env.VUE_APP_BASE_API + img) : []
       this.detailOpen = true
     },
 

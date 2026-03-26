@@ -1,8 +1,8 @@
 <div align="center">
 
-# 🏙️ SmartLive Admin — 后台管理端
+# 🏙️ SmartLive Admin — 商家端与平台管理后台
 
-**SmartLive 智评生活 · Vue 2 + Element UI 运营管理后台**
+**SmartLive 智评生活 · Vue 2 + Element UI 运营后台（商家经营 + 平台治理）**
 
 [![Vue](https://img.shields.io/badge/Vue-2.6.x-42b883?logo=vue.js&logoColor=white)](https://vuejs.org/)
 [![Element UI](https://img.shields.io/badge/Element--UI-2.15.x-409EFF)](https://element.eleme.cn/)
@@ -10,28 +10,42 @@
 [![Node](https://img.shields.io/badge/Node-%3E%3D14-success)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
+📚 总览文档： [SmartLive 在线文档](https://mumulinya.github.io/smartLive-Cloud/)
+
 </div>
 
 ## 📦 项目仓库
 
 | 仓库 | 说明 | 链接 |
 |:---:|:---:|:---:|
-| **smartLive-Cloud** | 后端微服务 | [GitHub](https://github.com/mumulinya/smart-live) |
-| **smartLive-admin** | 后台管理端（本仓库） | [GitHub](https://github.com/mumulinya/smartLive-admin) |
-| **smartLive-web** | 用户端前台（Vue 3 响应式） | [GitHub](https://github.com/mumulinya/smartLive-web) |
+| **smartLive-Cloud** | 后端主仓库与在线总文档 | [GitHub](https://github.com/mumulinya/smartLive-Cloud) |
+| **smartLive-admin** | 商家端与平台管理后台（本仓库） | [GitHub](https://github.com/mumulinya/smartLive-admin.git) |
+| **smartLive-web** | 用户端 App（Vue 移动端 / H5 页面） | [GitHub](https://github.com/mumulinya/smartLive-web.git) |
 
 ## 🎨 效果预览
-
-> 📷 截图占位 — 替换为实际项目截图后删除本行
 
 | 首页看板 | 店铺管理 | 商品管理 |
 |:---:|:---:|:---:|
 | ![dashboard](docs/images/dashboard.png) | ![shop](docs/images/business-shop.png) | ![product](docs/images/business-product.png) |
-| **审核中心** | **积分中心** | **订单管理** |
-| ![audit](docs/images/audit-center.png) | ![points](docs/images/points-center.png) | ![order](docs/images/business-order.png) |
+| **审核中心** | **订单管理** | **AI 商家助手** |
+| ![audit](docs/images/audit-center.png) | ![order](docs/images/business-order.png) | ![assistant](docs/images/merchant-ai-assistant.png) |
+| **积分明细** | **评价管理** | **业务用户** |
+| ![points](docs/images/points-center.png) | ![review](docs/images/business-review.png) | ![business-user](docs/images/business-user.png) |
+
+## 🖼️ 页面截图索引
+
+| 分组 | 内容说明 | 入口 |
+|:---|:---|:---|
+| 商家端 Web 页面走查 | 经营总览、店铺管理、商品管理、订单履约、商家助手等链路展示 | [SHOWCASE](https://mumulinya.github.io/smartLive-Cloud/SHOWCASE) |
+| 平台管理端页面走查 | 审核中心、博客管理、评论管理、评价管理、业务用户、积分配置等治理页面 | [SHOWCASE](https://mumulinya.github.io/smartLive-Cloud/SHOWCASE) |
+| 后台页面映射 | 商家端与管理端页面名称、分组与截图索引总表 | [PAGE_GALLERY](https://mumulinya.github.io/smartLive-Cloud/PAGE_GALLERY) |
+| 当前仓库截图目录 | README 已同步的后台代表页面截图资源 | [docs/images](./docs/images) |
+
+- 后台主分组可对照：商家端经营总览、店铺与商品配置、订单履约与详情、商家助手、审核中心、博客/评论/评价治理、业务用户、积分明细与抽奖配置。
 
 ## 📋 目录
 
+- [页面截图索引](#页面截图索引)
 - [项目定位](#项目定位)
 - [项目亮点](#项目亮点)
 - [功能模块](#功能模块)
@@ -39,21 +53,23 @@
 - [快速开始](#快速开始)
 - [环境变量](#环境变量)
 - [项目结构](#项目结构)
+- [相关文档](#相关文档)
 - [常见问题](#常见问题)
 - [参与贡献](#参与贡献)
 - [开源协议](#开源协议)
 
 ## 📖 项目定位
 
-SmartLive Admin 是 SmartLive 智评生活平台的运营管理后台，基于 **RuoYi-Vue** 二次开发，覆盖 **店铺、商品/代金券、订单、笔记、评论、积分、审核、系统管理** 等完整业务链路。采用动态权限路由，菜单与按钮权限由后端返回，前端按权限动态渲染。
+ SmartLive Admin 是 SmartLive 智评生活平台的运营管理后台，基于 **RuoYi-Vue** 二次开发，覆盖 **店铺、商品、订单、笔记、评论、评价、业务用户、积分、审核、商家助手、系统管理** 等完整业务链路。采用动态权限路由，菜单与按钮权限由后端返回，前端按权限动态渲染。
 
 ## 🎯 项目亮点
 
 - 🔐 **动态权限路由** — 菜单与按钮权限后端返回，前端按权限动态加载，支持数据权限控制
-- 🏪 **业务全覆盖** — 店铺/商品/代金券/订单/笔记/评论/审核/积分 7 大业务模块
+- 🏪 **业务全覆盖** — 店铺/商品/订单/笔记/评论/评价/业务用户/审核/积分/商家助手全链路覆盖
 - 📊 **数据可视化** — ECharts 5 驱动首页看板，KPI 卡片 + 趋势图 + 最新动态
-- 🛡️ **多业务审核** — 统一审核中心，支持用户/文章/店铺/评价/评论/代金券/团购 7 种类型
+- 🛡️ **多业务审核** — 统一审核中心，支持用户/文章/店铺/评价/评论/商品等内容治理
 - 🎁 **积分运营** — 积分流水查询 + 手动加减 + 抽奖奖品配置（概率/库存/上下架）
+- 🤖 **AI 商家助手** — 评价回复、经营状况分析、商品营销文案、经营改进建议
 - 🔧 **开发工具** — 拖拽式表单构建 + 数据库表一键代码生成
 - 📝 **富文本编辑** — Quill 2 富文本编辑器，支持图文混排
 - ⚙️ **工程化** — 环境隔离、代理转发、Gzip 压缩、代码分包、RSA 加密
@@ -73,28 +89,30 @@ SmartLive Admin 是 SmartLive 智评生活平台的运营管理后台，基于 *
 
 | 功能 | 说明 |
 |:---|:---|
-| 店铺管理 | CRUD、分类筛选、地图选点、图片上传、缓存刷新、审核发布 |
-| 商品管理 | CRUD、普通/秒杀切换、库存管理、有效期、状态切换、批量发布 |
-| 代金券管理 | CRUD、库存变更、降价通知、状态切换 |
-| 订单管理 | CRUD、状态流转、支付方式筛选、时间轴详情 |
-| 笔记/博客管理 | CRUD、Quill 富文本编辑、图片上传、审核发布 |
-| 评论管理 | CRUD、来源过滤、状态控制、AI 生成评论 |
-| APP 用户管理 | CRUD、头像管理、状态管理、发布 |
+| 店铺管理 | 列表筛选、新增/编辑、地图选点、图片上传、详情弹层、缓存刷新、审核发布 |
+| 商品管理 | 列表筛选、新增/编辑、详情弹层、代金券/团购/秒杀切换、库存管理、有效期、批量发布 |
+| 订单管理 | 列表筛选、支付方式过滤、履约状态追踪、订单详情弹层、核销状态展示 |
+| 笔记/博客管理 | 列表查询、标题/用户/店铺筛选、详情弹层、互动数据与状态审核 |
+| 评论管理 | 来源过滤、状态/审核状态控制、评论详情查看 |
+| 评价管理 | 评分明细查看、状态/审核状态控制、评价详情查看、AI 生成评价 |
+| 业务用户管理 | 列表查询、详情查看、头像资料展示 |
+| 商家助手 | AI 主会话、评价回复、经营状况分析、商品营销文案、经营改进建议 |
 
 ### ✅ 审核中心
 
 | 功能 | 说明 |
 |:---|:---|
-| 统一审核 | 支持用户/文章/店铺/评价/评论/代金券/团购 7 种业务类型 |
+| 统一审核 | 支持用户/文章/店铺/评价/评论/商品等业务类型分栏审核 |
+| 审核详情 | 提交信息、关联目标、图片内容与详情查看 |
 | 审核操作 | 通过/驳回、驳回原因填写 |
 
 ### 🎁 积分中心
 
 | 功能 | 说明 |
 |:---|:---|
-| 积分明细 | 流水查询、时间筛选、用户筛选 |
+| 积分明细 | 流水查询、时间筛选、用户筛选、业务类型展示 |
 | 积分调整 | 管理员手动加减积分并记录备注 |
-| 抽奖配置 | 奖品 CRUD、概率设置、库存管理、上下架控制 |
+| 抽奖配置 | 奖品 CRUD、概率设置、库存管理、排序、上下架控制 |
 
 ### ⚙️ 系统管理
 
@@ -107,7 +125,6 @@ SmartLive Admin 是 SmartLive 智评生活平台的运营管理后台，基于 *
 | 岗位管理 | 岗位职级配置 |
 | 字典管理 | 字典类型与字典数据维护 |
 | 参数设置 | 系统参数配置与缓存刷新 |
-| 通知公告 | 公告发布与管理 |
 | 操作日志 | 操作日志记录与查询 |
 | 登录日志 | 登录日志、解锁账户、日志清理 |
 
@@ -248,20 +265,21 @@ smartLive-ui/
 │  │  └─ ...                       #   字典/滚动/错误码等
 │  └─ views/                       # 页面模块
 │     ├─ business/                 #   业务管理
+│     │  ├─ ai/                    #     商家助手
 │     │  ├─ shop/                  #     店铺管理
-│     │  ├─ product/               #     商品管理
-│     │  ├─ voucher/               #     代金券管理
+│     │  ├─ product/               #     商品管理（代金券/团购/秒杀）
 │     │  ├─ order/                 #     订单管理
 │     │  ├─ blog/                  #     笔记/博客管理
 │     │  ├─ comment/               #     评论管理
-│     │  └─ user/                  #     APP 用户管理
+│     │  ├─ review/                #     评价管理
+│     │  ├─ user/                  #     业务用户管理
 │     ├─ system/                   #   系统管理
 │     │  ├─ audit/                 #     审核中心
 │     │  ├─ points/                #     积分中心
-│     │  ├─ user/ & role/ & menu/  #     用户/角色/菜单
+│     │  ├─ user/ & role/ & menu/  #     系统用户/角色/菜单
 │     │  ├─ dept/ & post/          #     部门/岗位
 │     │  ├─ dict/ & config/        #     字典/参数
-│     │  └─ notice/ & operlog/     #     公告/日志
+│     │  └─ operlog/ & logininfor/ #     操作日志/登录日志
 │     ├─ monitor/                  #   监控中心（在线用户/定时任务）
 │     └─ tool/                     #   开发工具（表单构建/代码生成）
 ├─ .env.development                # 开发环境变量
@@ -270,6 +288,12 @@ smartLive-ui/
 ├─ vue.config.js                   # Webpack + 代理配置
 └─ package.json
 ```
+
+## 📚 相关文档
+
+- [SmartLive 在线文档](https://mumulinya.github.io/smartLive-Cloud/)
+- [后端主仓库 smartLive-Cloud](https://github.com/mumulinya/smartLive-Cloud)
+- [开源接入说明](https://mumulinya.github.io/smartLive-Cloud/OPEN_SOURCE)
 
 ## ❓ 常见问题
 
@@ -285,12 +309,18 @@ smartLive-ui/
 - 确认后端 `/system/menu/getRouters` 接口返回正确的菜单数据
 - 确认当前用户角色拥有菜单权限
 
+### 4. 商家助手页面没有返回内容？
+- 先确认已选择店铺，再检查 AI 相关后端服务与业务数据是否正常。
+- 重点排查评价、订单、商品等分析数据源是否可用。
+
 ## 🤝 参与贡献
 
-1. **Fork** 本仓库
-2. **创建** 功能分支：`git checkout -b feature/your-feature`
-3. **提交** 代码：`git commit -m "feat: add xxx"`
-4. **推送** 并发起 Pull Request
+欢迎通过 Issue 或 PR 一起完善这个后台仓库。
+
+建议在提交前至少确认：
+- 业务页面截图与 README 展示一致
+- 涉及权限、菜单、审核流时同步更新说明
+- 本地开发环境可正常跑通主要页面
 
 ## 📄 开源协议
 
