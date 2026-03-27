@@ -10,27 +10,31 @@
 [![Node](https://img.shields.io/badge/Node-%3E%3D14-success)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-📚 总览文档： [SmartLive 在线文档](https://mumulinya.github.io/smartLive-Cloud/)
+📚 在线文档： [SmartLive 在线文档](https://mumulinya.github.io/smartLive-Cloud/) · [视觉导览](https://mumulinya.github.io/smartLive-Cloud/SHOWCASE) · [页面导览](https://mumulinya.github.io/smartLive-Cloud/PAGE_GALLERY) · [开源接入](https://mumulinya.github.io/smartLive-Cloud/OPEN_SOURCE)
 
 </div>
 
-## 📦 项目仓库
+## 📦 项目仓库矩阵
 
 | 仓库 | 说明 | 链接 |
 |:---:|:---:|:---:|
 | **smartLive-Cloud** | 后端主仓库与在线总文档 | [GitHub](https://github.com/mumulinya/smartLive-Cloud) |
-| **smartLive-admin** | 商家端与平台管理后台（本仓库） | [GitHub](https://github.com/mumulinya/smartLive-admin.git) |
 | **smartLive-web** | 用户端 App（Vue 移动端 / H5 页面） | [GitHub](https://github.com/mumulinya/smartLive-web.git) |
+| **smartLive-admin** | 商家端与平台管理后台（本仓库） | [GitHub](https://github.com/mumulinya/smartLive-admin.git) |
 
 ## 🎨 效果预览
 
-| 首页看板 | 店铺管理 | 商品管理 |
+| 经营总览 | 店铺管理 | 商品管理 |
 |:---:|:---:|:---:|
 | ![dashboard](docs/images/dashboard.png) | ![shop](docs/images/business-shop.png) | ![product](docs/images/business-product.png) |
-| **审核中心** | **订单管理** | **AI 商家助手** |
-| ![audit](docs/images/audit-center.png) | ![order](docs/images/business-order.png) | ![assistant](docs/images/merchant-ai-assistant.png) |
-| **积分明细** | **评价管理** | **业务用户** |
-| ![points](docs/images/points-center.png) | ![review](docs/images/business-review.png) | ![business-user](docs/images/business-user.png) |
+| **订单管理** | **订单详情** | **AI 商家助手** |
+| ![order-manage](docs/images/business-order-manage.png) | ![merchant-order-detail](docs/images/merchant-order-detail.png) | ![assistant](docs/images/merchant-ai-assistant.png) |
+| **审核中心** | **博客管理** | **评价管理** |
+| ![audit](docs/images/audit-center.png) | ![blog-manage](docs/images/business-blog-manage.png) | ![review](docs/images/business-review.png) |
+| **业务用户** | **业务用户详情** | **积分明细** |
+| ![business-user](docs/images/business-user.png) | ![business-user-detail](docs/images/business-user-detail.png) | ![points](docs/images/business-points-records.png) |
+
+推荐阅读顺序：商家端经营总览 -> 店铺与商品经营 -> 订单履约与详情 -> AI 经营助手 -> 平台审核中心 -> 博客/评论/评价治理 -> 业务用户 -> 积分明细与抽奖配置。
 
 ## 🖼️ 页面截图索引
 
@@ -43,7 +47,7 @@
 
 - 后台主分组可对照：商家端经营总览、店铺与商品配置、订单履约与详情、商家助手、审核中心、博客/评论/评价治理、业务用户、积分明细与抽奖配置。
 
-## 📋 目录
+## 📋 文档导航
 
 - [页面截图索引](#页面截图索引)
 - [项目定位](#项目定位)
